@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Pietre Corrotte — Idle Farming RPG</title>
+<meta name="description" content="Un idle RPG di farming del loot ispirato all'atmosfera di Metin2: uccidi mostri, raccogli equipaggiamento, potenzia il tuo eroe e rinasci più forte.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-void:#0b0e14;
+  --bg-panel:#121824;
+  --bg-panel-2:#161d2c;
+  --bg-inset:#0e1420;
+  --border:#233046;
+  --border-soft:#1b2436;
+  --jade:#3fa796;
+  --jade-dim:#2a7268;
+  --gold:#d4af6a;
+  --gold-dim:#9c7d43;
+  --blood:#c94f4f;
+  --blood-dim:#7a3232;
+  --text:#e8e3d3;
+  --text-muted:#8892a0;
+  --text-faint:#5b6472;
+  --rarity-comune:#9aa4b2;
+  --rarity-raro:#4f8fd4;
+  --rarity-epico:#a45fd4;
+  --rarity-leggendario:#e0983f;
+  --radius:10px;
+  --font-display:'Cinzel', serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(ellipse at top, rgba(63,167,150,0.06), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(201,79,79,0.05), transparent 55%),
+    var(--bg-void);
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh;
+  line-height:1.4;
+}
+::selection{background:var(--jade-dim);color:#fff;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track{background:var(--bg-inset);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:var(--jade-dim);}
+
+a{color:var(--jade);}
+
+.app{
+  max-width:1360px;
+  margin:0 auto;
+  padding:20px 20px 60px;
+}
+
+/* ---------- Header ---------- */
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  padding:16px 22px;
+  background:linear-gradient(180deg, var(--bg-panel-2), var(--bg-panel));
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  margin-bottom:16px;
+}
+.brand{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.brand-title{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:22px;
+  letter-spacing:0.04em;
+  color:var(--text);
+  text-shadow:0 0 18px rgba(63,167,150,0.35);
+}
+.brand-sub{
+  font-size:11px;
+  color:var(--text-faint);
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+}
+.resources{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.res-pill{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:var(--bg-inset);
+  border:1px solid var(--border-soft);
+  border-radius:999px;
+  padding:7px 14px;
+  font-family:var(--font-mono);
+  font-size:13px;
+}
+.res-pill .ico{font-size:15px;}
+.res-pill.yang{color:var(--gold);}
+.res-pill.gem{color:var(--jade);}
+
+.levelbar-wrap{
+  padding:10px 22px 16px;
+  background:var(--bg-panel);
+  border:1px solid var(--border);
+  border-top:none;
+  border-radius:0 0 var(--radius) var(--radius);
+  margin-top:-16px;
+  margin-bottom:16px;
+}
+.levelbar-row{
+  display:flex;
+  justify-content:space-between;
+  font-size:12px;
+  color:var(--text-muted);
+  margin-bottom:6px;
+  font-family:var(--font-mono);
+}
+.levelbar-row b{color:var(--text);}
+.bar{
+  height:9px;
+  border-radius:999px;
+  background:var(--bg-inset);
+  border:1px solid var(--border-soft);
+  overflow:hidden;
+}
+.bar-fill{
+  height:100%;
+  background:linear-gradient(90deg, var(--jade-dim), var(--jade));
+  transition:width .25s ease;
+}
+.bar-fill.hp{background:linear-gradient(90deg, var(--blood-dim), var(--blood));}
+.bar-fill.gold{background:linear-gradient(90deg, var(--gold-dim), var(--gold));}
+
+/* ---------- Layout ---------- */
+.layout{
+  display:grid;
+  grid-template-columns:280px minmax(0,1fr) 320px;
+  gap:16px;
+  align-items:start;
+}
+@media (max-width:1050px){
+  .layout{grid-template-columns:1fr;}
+}
+
+.panel{
+  background:var(--bg-panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px;
+}
+.panel + .panel{margin-top:16px;}
+.panel-title{
+  font-family:var(--font-display);
+  font-size:13px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--jade);
+  margin:0 0 12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.panel-title .line{flex:1;height:1px;background:linear-gradient(90deg, var(--border-soft), transparent);}
+
+/* ---------- Character panel ---------- */
+.char-stats{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  font-family:var(--font-mono);
+  font-size:12.5px;
+  margin-bottom:14px;
+}
+.stat-row{display:flex;justify-content:space-between;color:var(--text-muted);}
+.stat-row b{color:var(--text);font-weight:600;}
+
+.gear-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-bottom:8px;
+}
+.gear-slot{
+  background:var(--bg-inset);
+  border:1px solid var(--border-soft);
+  border-radius:8px;
+  padding:9px 8px;
+  cursor:default;
+  position:relative;
+}
+.gear-slot .slot-label{
+  font-size:9.5px;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  color:var(--text-faint);
+  margin-bottom:3px;
+}
+.gear-slot .slot-item{
+  font-size:12px;
+  font-weight:600;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.gear-slot .slot-empty{color:var(--text-faint);font-style:italic;font-weight:400;}
+.gear-slot .slot-stat{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  color:var(--text-muted);
+  margin-top:2px;
+}
+.rar-comune{color:var(--rarity-comune);}
+.rar-raro{color:var(--rarity-raro);}
+.rar-epico{color:var(--rarity-epico);}
+.rar-leggendario{color:var(--rarity-leggendario);}
+
+/* ---------- Zone tabs ---------- */
+.zone-tabs{
+  display:flex;
+  gap:6px;
+  overflow-x:auto;
+  padding-bottom:4px;
+  margin-bottom:14px;
+}
+.zone-tab{
+  flex:0 0 auto;
+  background:var(--bg-inset);
+  border:1px solid var(--border-soft);
+  color:var(--text-muted);
+  padding:8px 13px;
+  border-radius:8px;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:all .15s ease;
+}
+.zone-tab:hover{border-color:var(--jade-dim);color:var(--text);}
+.zone-tab.active{
+  background:linear-gradient(180deg, var(--jade-dim), var(--jade));
+  color:#0b0e14;
+  border-color:var(--jade);
+}
+.zone-tab.locked{
+  opacity:0.45;
+  cursor:not-allowed;
+}
+.zone-tab.locked:hover{border-color:var(--border-soft);color:var(--text-muted);}
+
+/* ---------- Combat area ---------- */
+.combat-stage{
+  background:
+    radial-gradient(ellipse at center, rgba(63,167,150,0.08), transparent 65%),
+    var(--bg-inset);
+  border:1px solid var(--border-soft);
+  border-radius:10px;
+  padding:26px 20px;
+  text-align:center;
+  position:relative;
+  margin-bottom:14px;
+  overflow:hidden;
+}
+.zone-name{
+  font-family:var(--font-display);
+  font-size:12px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--text-faint);
+  margin-bottom:10px;
+}
+.monster-glyph{
+  font-size:56px;
+  margin-bottom:6px;
+  filter:drop-shadow(0 0 14px rgba(63,167,150,0.25));
+  user-select:none;
+  transition:transform .08s ease;
+}
+.monster-glyph.hit{transform:scale(0.9) rotate(-3deg);}
+.monster-name{
+  font-weight:700;
+  font-size:16px;
+  margin-bottom:2px;
+}
+.monster-name.boss{color:var(--blood);}
+.monster-hp-label{
+  font-family:var(--font-mono);
+  font-size:11.5px;
+  color:var(--text-muted);
+  margin-bottom:5px;
+}
+.monster-hpbar{
+  height:14px;
+  border-radius:999px;
+  background:var(--bg-void);
+  border:1px solid var(--border-soft);
+  overflow:hidden;
+  max-width:420px;
+  margin:0 auto 16px;
+}
+.monster-hpbar-fill{
+  height:100%;
+  background:linear-gradient(90deg, var(--blood-dim), var(--blood));
+  transition:width .12s ease;
+}
+.attack-btn{
+  background:linear-gradient(180deg, var(--jade), var(--jade-dim));
+  color:#08120f;
+  border:none;
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:14px;
+  letter-spacing:0.04em;
+  padding:12px 28px;
+  border-radius:999px;
+  cursor:pointer;
+  box-shadow:0 4px 0 var(--jade-dim), 0 6px 14px rgba(0,0,0,0.35);
+  transition:transform .06s ease;
+  user-select:none;
+}
+.attack-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--jade-dim);}
+.floatnum{
+  position:absolute;
+  font-family:var(--font-mono);
+  font-weight:700;
+  font-size:15px;
+  color:var(--gold);
+  pointer-events:none;
+  animation:floatUp .7s ease forwards;
+}
+@keyframes floatUp{
+  0%{opacity:1;transform:translateY(0);}
+  100%{opacity:0;transform:translateY(-40px);}
+}
+
+/* HP / danger */
+.player-hp-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:var(--font-mono);
+  font-size:11.5px;
+  color:var(--text-muted);
+  margin-bottom:10px;
+}
+.player-hp-row .bar{flex:1;}
+
+/* ---------- Log ---------- */
+.log-scroll{
+  background:var(--bg-inset);
+  border:1px solid var(--border-soft);
+  border-radius:8px;
+  padding:10px 12px;
+  height:150px;
+  overflow-y:auto;
+  font-family:var(--font-mono);
+  font-size:11.5px;
+  display:flex;
+  flex-direction:column-reverse;
+}
+.log-line{padding:2px 0;color:var(--text-muted);border-bottom:1px dashed rgba(255,255,255,0.03);}
+.log-line b{color:var(--text);}
+.log-line.drop{color:var(--gold);}
+.log-line.rare{color:var(--rarity-epico);}
+.log-line.legend{color:var(--rarity-leggendario);}
+.log-line.danger{color:var(--blood);}
+
+/* ---------- Upgrades ---------- */
+.upgrade-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  background:var(--bg-inset);
+  border:1px solid var(--border-soft);
+  border-radius:8px;
+  padding:10px 12px;
+  margin-bottom:8px;
+}
+.upgrade-info .u-name{font-size:12.5px;font-weight:600;}
+.upgrade-info .u-desc{font-size:10.5px;color:var(--text-faint);margin-top:2px;}
+.upgrade-info .u-lvl{font-size:10px;color:var(--jade);font-family:var(--font-mono);margin-top:2px;}
+.buy-btn{
+  background:var(--bg-panel-2);
+  border:1px solid var(--border);
+  color:var(--gold);
+  font-family:var(--font-mono);
+  font-size:11.5px;
+  font-weight:600;
+  padding:8px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  white-space:nowrap;
+  min-width:78px;
+}
+.buy-btn:hover:not(:disabled){border-color:var(--gold-dim);background:var(--bg-panel);}
+.buy-btn:disabled{opacity:0.35;cursor:not-allowed;}
+
+/* ---------- Inventory ---------- */
+.inv-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+  font-size:11px;
+  color:var(--text-faint);
+}
+.inv-toolbar label{display:flex;align-items:center;gap:6px;cursor:pointer;}
+.inv-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:7px;
+  max-height:210px;
+  overflow-y:auto;
+  padding-right:2px;
+}
+@media (max-width:1050px){.inv-grid{grid-template-columns:repeat(6,1fr);}}
+.inv-item{
+  background:var(--bg-inset);
+  border:1px solid var(--border-soft);
+  border-radius:7px;
+  padding:7px 5px;
+  text-align:center;
+  cursor:pointer;
+  font-size:9.5px;
+  transition:border-color .1s ease;
+}
+.inv-item:hover{border-color:var(--jade-dim);}
+.inv-item .ii-icon{font-size:17px;display:block;margin-bottom:3px;}
+.inv-item .ii-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
+.inv-empty{color:var(--text-faint);font-size:11.5px;font-style:italic;text-align:center;padding:20px 0;grid-column:1/-1;}
+
+/* ---------- Prestige ---------- */
+.prestige-box{
+  background:linear-gradient(180deg, rgba(212,175,106,0.07), transparent);
+  border:1px solid var(--gold-dim);
+  border-radius:8px;
+  padding:12px;
+  margin-bottom:10px;
+  font-size:12px;
+  color:var(--text-muted);
+}
+.prestige-btn{
+  width:100%;
+  background:linear-gradient(180deg, var(--gold), var(--gold-dim));
+  color:#1a1408;
+  border:none;
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:12.5px;
+  letter-spacing:0.03em;
+  padding:10px;
+  border-radius:8px;
+  cursor:pointer;
+  margin-top:8px;
+}
+.prestige-btn:disabled{opacity:0.35;cursor:not-allowed;filter:grayscale(0.4);}
+
+/* ---------- Modal ---------- */
+.modal-bg{
+  position:fixed;inset:0;
+  background:rgba(5,7,11,0.75);
+  display:flex;align-items:center;justify-content:center;
+  z-index:50;
+  padding:20px;
+}
+.modal{
+  background:var(--bg-panel-2);
+  border:1px solid var(--jade-dim);
+  border-radius:12px;
+  padding:24px;
+  max-width:380px;
+  width:100%;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.modal h2{
+  font-family:var(--font-display);
+  color:var(--jade);
+  font-size:18px;
+  margin:0 0 12px;
+}
+.modal p{font-size:13px;color:var(--text-muted);margin:6px 0;}
+.modal .close-btn{
+  margin-top:16px;
+  background:var(--jade);
+  border:none;
+  color:#08120f;
+  font-weight:700;
+  padding:10px 22px;
+  border-radius:999px;
+  cursor:pointer;
+  font-family:var(--font-display);
+}
+.hidden{display:none !important;}
+
+.tooltip-hint{font-size:10px;color:var(--text-faint);text-align:center;margin-top:6px;}
+footer.credits{
+  text-align:center;
+  color:var(--text-faint);
+  font-size:11px;
+  margin-top:26px;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-title">⛩ Pietre Corrotte</div>
+      <div class="brand-sub">Idle Farming RPG</div>
+    </div>
+    <div class="resources">
+      <div class="res-pill yang"><span class="ico">💰</span><span id="res-yang">0</span></div>
+      <div class="res-pill gem"><span class="ico">💎</span><span id="res-gem">0</span></div>
+      <button id="btn-reset" class="buy-btn" style="color:var(--blood);" title="Cancella salvataggio">↺ reset</button>
+    </div>
+  </div>
+
+  <div class="levelbar-wrap">
+    <div class="levelbar-row"><span>Livello <b id="lv-num">1</b></span><span id="xp-label" class="stat-font">0 / 0 XP</span></div>
+    <div class="bar"><div id="xp-fill" class="bar-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="layout">
+
+    <!-- LEFT: Character -->
+    <div>
+      <div class="panel">
+        <div class="panel-title">Eroe<span class="line"></span></div>
+        <div class="char-stats">
+          <div class="stat-row"><span>Attacco</span><b id="stat-atk">0</b></div>
+          <div class="stat-row"><span>Difesa</span><b id="stat-def">0</b></div>
+          <div class="stat-row"><span>Vita massima</span><b id="stat-maxhp">0</b></div>
+          <div class="stat-row"><span>Bottino</span><b id="stat-drop">0%</b></div>
+          <div class="stat-row"><span>Fortuna oro</span><b id="stat-gold">0%</b></div>
+          <div class="stat-row"><span>Vel. attacco</span><b id="stat-speed">0.0/s</b></div>
+        </div>
+        <div class="panel-title" style="margin-top:6px;">Equipaggiamento<span class="line"></span></div>
+        <div class="gear-grid" id="gear-grid"></div>
+        <div class="tooltip-hint">Clicca un oggetto in Bottino per equipaggiarlo</div>
+      </div>
+    </div>
+
+    <!-- CENTER: Combat -->
+    <div>
+      <div class="panel">
+        <div class="panel-title">Zone di caccia<span class="line"></span></div>
+        <div class="zone-tabs" id="zone-tabs"></div>
+
+        <div class="player-hp-row">
+          <span>❤ HP</span>
+          <div class="bar"><div id="player-hp-fill" class="bar-fill hp" style="width:100%"></div></div>
+          <span id="player-hp-label">0/0</span>
+        </div>
+
+        <div class="combat-stage">
+          <div class="zone-name" id="stage-zone">—</div>
+          <div class="monster-glyph" id="monster-glyph">👹</div>
+          <div class="monster-name" id="monster-name">—</div>
+          <div class="monster-hp-label" id="monster-hp-label">0 / 0</div>
+          <div class="monster-hpbar"><div id="monster-hp-fill" class="monster-hpbar-fill" style="width:100%"></div></div>
+          <button class="attack-btn" id="attack-btn">⚔ Colpisci</button>
+        </div>
+
+        <div class="panel-title">Registro di caccia<span class="line"></span></div>
+        <div class="log-scroll" id="log-scroll"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Upgrades / Inventory / Prestige -->
+    <div>
+      <div class="panel">
+        <div class="panel-title">Potenziamenti<span class="line"></span></div>
+        <div id="upgrade-list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Bottino<span class="line"></span></div>
+        <div class="inv-toolbar">
+          <label><input type="checkbox" id="auto-equip" checked> auto-equipaggia se migliore</label>
+          <button class="buy-btn" id="sell-all-common" style="min-width:auto;">vendi comuni</button>
+        </div>
+        <div class="inv-grid" id="inv-grid"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Rinascita<span class="line"></span></div>
+        <div class="prestige-box" id="prestige-box">Raggiungi il livello 25 per poter rinascere e ottenere Gemme permanenti.</div>
+        <div id="prestige-upgrades"></div>
+        <button class="prestige-btn" id="prestige-btn" disabled>Rinasci (0 💎)</button>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="credits">Salvataggio automatico nel browser · ispirato all'atmosfera dei MMORPG oldschool coreani</footer>
+</div>
+
+<div class="modal-bg hidden" id="offline-modal">
+  <div class="modal">
+    <h2>Bentornato, viandante</h2>
+    <p id="offline-text">I tuoi servitori hanno continuato a cacciare in tua assenza.</p>
+    <button class="close-btn" id="offline-close">Continua</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* =====================================================
+   DATA
+===================================================== */
+const RARITIES = [
+  {key:'comune', label:'Comune', mult:1.0, weight:58, icon:''},
+  {key:'raro', label:'Raro', mult:1.7, weight:28, icon:'✦'},
+  {key:'epico', label:'Epico', mult:2.8, weight:11, icon:'✧'},
+  {key:'leggendario', label:'Leggendario', mult:4.6, weight:3, icon:'★'}
+];
+
+const SLOT_DEFS = {
+  arma:   {label:'Arma',       icon:'🗡', stat:'atk',  statLabel:'ATT'},
+  armatura:{label:'Armatura',  icon:'🛡', stat:'def',  statLabel:'DIF'},
+  elmo:   {label:'Elmo',       icon:'⛑',  stat:'hp',   statLabel:'HP'},
+  amuleto:{label:'Amuleto',    icon:'📿', stat:'drop', statLabel:'BOT%'}
+};
+const SLOT_KEYS = Object.keys(SLOT_DEFS);
+
+const ITEM_NAMES = {
+  arma: ['Lama Corrosa','Falce d\u2019Ossa','Spadone di Giada','Pugnale Ombra','Ascia del Custode','Katana Corrotta'],
+  armatura: ['Corazza Logora','Piastre di Bronzo','Veste del Sigillo','Corazza Draconica','Mantello Cenere'],
+  elmo: ['Cappuccio Strappato','Elmo Cornuto','Diadema di Giada','Maschera del Vuoto','Corona Spezzata'],
+  amuleto: ['Ciondolo Sbiadito','Sigillo di Yang','Occhio di Vetro','Reliquia Corrotta','Talismano Antico']
+};
+
+const ZONES = [
+  {id:'foresta', name:'Foresta Corrotta', reqLevel:1, glyphs:['🐺','🐗','👺'], boss:'🌲', bossName:'Custode della Foresta', hpBase:18, goldBase:4, xpBase:5},
+  {id:'palude', name:'Palude delle Ombre', reqLevel:10, glyphs:['🐸','👻','🧙'], boss:'🌫', bossName:'Signora delle Ombre', hpBase:70, goldBase:12, xpBase:14},
+  {id:'rovine', name:'Rovine di Jinno', reqLevel:20, glyphs:['💀','🏹','🗿'], boss:'⚔', bossName:'Generale Decaduto', hpBase:220, goldBase:32, xpBase:34},
+  {id:'vulcano', name:'Vulcano dei Demoni', reqLevel:35, glyphs:['👹','🌋','🐕'], boss:'🔥', bossName:'Signore delle Fiamme', hpBase:650, goldBase:80, xpBase:78},
+  {id:'santuario', name:'Santuario del Metin', reqLevel:50, glyphs:['🗿','👁','🕷'], boss:'💠', bossName:'Cuore del Metin', hpBase:1800, goldBase:210, xpBase:190}
+];
+const MONSTER_NAMES = {
+  foresta:['Lupo Corrotto','Cinghiale Marcio','Sciamano Goblin'],
+  palude:['Rospo Velenoso','Spettro Palustre','Strega delle Nebbie'],
+  rovine:['Guerriero Caduto','Arciere Spettrale','Statua Animata'],
+  vulcano:['Imp di Fuoco','Golem di Lava','Cane Infernale'],
+  santuario:['Custode di Pietra','Ombra del Metin','Servo Corrotto']
+};
+
+const UPGRADE_DEFS = [
+  {key:'atk', name:'Forza Interiore', desc:'+2 Attacco', base:12, growth:1.15, effect:2, statKey:'atk'},
+  {key:'speed', name:'Rapidità', desc:'-0.05s tra i colpi (min 0.4s)', base:30, growth:1.22, effect:0.05, statKey:'speed'},
+  {key:'drop', name:'Fortuna del Cacciatore', desc:'+0.6% possibilità di bottino', base:45, growth:1.28, effect:0.6, statKey:'drop'},
+  {key:'gold', name:'Rotte Commerciali', desc:'+3% Yang guadagnato', base:35, growth:1.24, effect:3, statKey:'gold'},
+  {key:'hp', name:'Vitalità', desc:'+15 Vita massima', base:18, growth:1.16, effect:15, statKey:'maxhp'},
+  {key:'def', name:'Corazzatura', desc:'+1 Difesa', base:22, growth:1.18, effect:1, statKey:'def'}
+];
+
+const PRESTIGE_UPGRADE_DEFS = [
+  {key:'p_atk', name:'Benedizione del Fuoco', desc:'+5% Attacco permanente', base:1, growth:1.6, effect:5},
+  {key:'p_gold', name:'Borsa Infinita', desc:'+8% Yang permanente', base:1, growth:1.6, effect:8},
+  {key:'p_drop', name:'Occhio della Fortuna', desc:'+1% possibilità bottino perm.', base:2, growth:1.9, effect:1},
+  {key:'p_hp', name:'Cuore di Pietra', desc:'+10% Vita massima perm.', base:1, growth:1.6, effect:10}
+];
+
+/* =====================================================
+   STATE
+===================================================== */
+function freshState(){
+  return {
+    level:1, xp:0, yang:0, gems:0,
+    hp:100, hpMax:100,
+    zoneId:'foresta',
+    killCount:0,
+    inBoss:false,
+    equipment:{arma:null, armatura:null, elmo:null, amuleto:null},
+    inventory:[],
+    upgrades:{atk:0, speed:0, drop:0, gold:0, hp:0, def:0},
+    prestigeUpgrades:{p_atk:0, p_gold:0, p_drop:0, p_hp:0},
+    monster:null,
+    autoEquip:true,
+    lastSave:Date.now(),
+    totalKills:0
+  };
+}
+let S = load() || freshState();
+let itemUid = 1;
+
+/* =====================================================
+   PERSISTENCE
+===================================================== */
+function save(){
+  S.lastSave = Date.now();
+  try{ localStorage.setItem('pietre-corrotte-save', JSON.stringify(S)); }catch(e){}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem('pietre-corrotte-save');
+    if(!raw) return null;
+    const parsed = JSON.parse(raw);
+    const fresh = freshState();
+    // shallow-merge to survive future added fields
+    return Object.assign(fresh, parsed, {
+      equipment: Object.assign(fresh.equipment, parsed.equipment||{}),
+      upgrades: Object.assign(fresh.upgrades, parsed.upgrades||{}),
+      prestigeUpgrades: Object.assign(fresh.prestigeUpgrades, parsed.prestigeUpgrades||{})
+    });
+  }catch(e){ return null; }
+}
+
+/* =====================================================
+   HELPERS
+===================================================== */
+function fmt(n){
+  n = Math.floor(n);
+  if(n < 1000) return String(n);
+  const units = ['K','M','B','T','Qa','Qi'];
+  let u = -1;
+  let v = n;
+  while(v >= 1000 && u < units.length-1){ v/=1000; u++; }
+  return v.toFixed(v<10?2:(v<100?1:0)) + units[u];
+}
+function xpToNext(level){ return Math.floor(30 * Math.pow(1.13, level-1)); }
+function currentZone(){ return ZONES.find(z=>z.id===S.zoneId) || ZONES[0]; }
+function unlockedZones(){ return ZONES.filter(z=>S.level>=z.reqLevel); }
+
+function totalStat(key){
+  let base = 0;
+  if(key==='atk') base = 4 + S.upgrades.atk*2;
+  if(key==='def') base = S.upgrades.def*1;
+  if(key==='maxhp') base = 80 + S.upgrades.hp*15;
+  if(key==='drop') base = 3 + S.upgrades.drop*0.6;
+  if(key==='goldpct') base = S.upgrades.gold*3;
+  if(key==='speed') base = Math.max(0.4, 1.6 - S.upgrades.speed*0.05);
+
+  // equipment bonuses
+  let eqBonus = 0;
+  SLOT_KEYS.forEach(slot=>{
+    const it = S.equipment[slot];
+    if(it && it.statType===key) eqBonus += it.statValue;
+  });
+
+  // prestige multipliers (percent based, applied after)
+  let mult = 1;
+  if(key==='atk') mult += S.prestigeUpgrades.p_atk*0.05;
+  if(key==='goldpct') mult += 0; // gold handled separately below
+  if(key==='maxhp') mult += S.prestigeUpgrades.p_hp*0.10;
+  if(key==='drop') mult += 0;
+
+  let val = (base + eqBonus);
+  if(key!=='speed') val *= mult;
+  if(key==='drop') val += S.prestigeUpgrades.p_drop*1;
+  return val;
+}
+function goldMultiplier(){
+  return 1 + (totalStat('goldpct')/100) + (S.prestigeUpgrades.p_gold*0.08);
+}
+
+/* =====================================================
+   MONSTER SPAWNING
+===================================================== */
+function spawnMonster(){
+  const zone = currentZone();
+  const zoneIdx = ZONES.findIndex(z=>z.id===zone.id);
+  const isBoss = S.killCount>0 && S.killCount % 10 === 0;
+  S.inBoss = isBoss;
+
+  const scaling = Math.pow(1.045, S.level-1) * Math.pow(1.6, zoneIdx);
+  const names = MONSTER_NAMES[zone.id];
+  const glyphs = zone.glyphs;
+  const idx = Math.floor(Math.random()*names.length);
+
+  const hpMax = Math.floor(zone.hpBase * scaling * (isBoss?7:1) * (0.85+Math.random()*0.3));
+  S.monster = {
+    name: isBoss ? zone.bossName : names[idx],
+    glyph: isBoss ? zone.boss : glyphs[idx],
+    hp: hpMax,
+    hpMax: hpMax,
+    isBoss: isBoss,
+    goldReward: Math.floor(zone.goldBase * scaling * (isBoss?5:1) * (0.8+Math.random()*0.4)),
+    xpReward: Math.floor(zone.xpBase * scaling * (isBoss?5:1) * (0.8+Math.random()*0.4))
+  };
+}
+
+/* =====================================================
+   ITEM GENERATION
+===================================================== */
+function rollRarity(){
+  const luckBonus = totalStat('drop')*0.3; // slightly skews rarity too
+  const total = RARITIES.reduce((a,r)=>a+r.weight,0) + luckBonus;
+  let roll = Math.random()*total;
+  for(const r of RARITIES){
+    if(roll < r.weight) return r;
+    roll -= r.weight;
+  }
+  return RARITIES[0];
+}
+function generateItem(){
+  const zoneIdx = ZONES.findIndex(z=>z.id===currentZone().id);
+  const slot = SLOT_KEYS[Math.floor(Math.random()*SLOT_KEYS.length)];
+  const rarity = rollRarity();
+  const names = ITEM_NAMES[slot];
+  const name = names[Math.floor(Math.random()*names.length)];
+  const def = SLOT_DEFS[slot];
+  const levelScale = 1 + (S.level-1)*0.12 + zoneIdx*1.4;
+  let baseVal;
+  if(def.stat==='atk') baseVal = 3;
+  else if(def.stat==='def') baseVal = 2;
+  else if(def.stat==='hp') baseVal = 12;
+  else baseVal = 1.2; // drop%
+  const statValue = Math.max(1, Math.round(baseVal * levelScale * rarity.mult * (0.9+Math.random()*0.25) * 10)/10);
+
+  return {
+    uid: itemUid++,
+    slot, name,
+    rarity: rarity.key,
+    rarityLabel: rarity.label,
+    icon: def.icon,
+    statType: def.stat==='hp' ? 'maxhp' : def.stat,
+    statLabel: def.statLabel,
+    statValue
+  };
+}
+function itemPower(item){
+  return item.statValue * (item.rarity==='comune'?1:item.rarity==='raro'?1.5:item.rarity==='epico'?2.2:3.2);
+}
+function sellValue(item){
+  return Math.max(1, Math.round(itemPower(item) * 2.2));
+}
+
+/* =====================================================
+   LOG
+===================================================== */
+const logEl = document.getElementById('log-scroll');
+function log(msg, cls){
+  const div = document.createElement('div');
+  div.className = 'log-line' + (cls?' '+cls:'');
+  div.innerHTML = msg;
+  logEl.insertBefore(div, logEl.firstChild);
+  while(logEl.children.length > 60) logEl.removeChild(logEl.lastChild);
+}
+
+/* =====================================================
+   COMBAT
+===================================================== */
+let tickTimer = null;
+let floatId = 0;
+
+function doAttack(manual){
+  if(!S.monster) spawnMonster();
+  const atk = totalStat('atk');
+  const variance = 0.85 + Math.random()*0.3;
+  const dmg = Math.max(1, Math.round(atk*variance));
+  S.monster.hp -= dmg;
+
+  if(manual) showFloatingNumber(dmg);
+  pulseGlyph();
+
+  // small retaliation chance, mitigated by Defense
+  const zoneIdx = ZONES.findIndex(z=>z.id===currentZone().id);
+  const retaliateChance = S.monster.isBoss ? 0.35 : 0.12;
+  if(Math.random() < retaliateChance){
+    const rawHit = 2 + zoneIdx*4 + (S.monster.isBoss?6:0);
+    const mitigated = Math.max(1, Math.round(rawHit - totalStat('def')*0.6));
+    S.hp = Math.max(0, S.hp - mitigated);
+    if(S.hp <= 0){
+      const penalty = Math.round(S.yang*0.1);
+      S.yang -= penalty;
+      S.hp = S.hpMax;
+      log(`💥 Sei stato sopraffatto e hai perso ${fmt(penalty)} 💰 nella fuga! La vita è tornata piena.`, 'danger');
+    }
+  } else {
+    // gentle regen when not hit
+    S.hp = Math.min(S.hpMax, S.hp + Math.max(1, Math.round(S.hpMax*0.01)));
+  }
+
+  if(S.monster.hp <= 0){
+    killMonster();
+  }
+  renderCombat();
+  renderStats();
+}
+
+function killMonster(){
+  const m = S.monster;
+  const goldGain = Math.round(m.goldReward * goldMultiplier());
+  S.yang += goldGain;
+  S.totalKills++;
+  gainXp(m.xpReward);
+
+  let logCls = m.isBoss ? 'danger' : '';
+  log(`${m.isBoss?'👑 ':''}Hai sconfitto <b>${m.name}</b> · +${fmt(goldGain)} 💰 · +${fmt(m.xpReward)} XP`, logCls);
+
+  // loot roll
+  const dropChance = Math.min(85, totalStat('drop') + (m.isBoss?25:0));
+  if(Math.random()*100 < dropChance){
+    const item = generateItem();
+    S.inventory.push(item);
+    const cls = item.rarity==='leggendario'?'legend':(item.rarity==='epico'?'rare':'drop');
+    log(`${RARITIES.find(r=>r.key===item.rarity).icon} Bottino: <b>${item.name}</b> [${item.rarityLabel}]`, cls);
+    if(S.autoEquip) maybeAutoEquip(item);
+    if(S.inventory.length > 60){
+      // auto-sell oldest common to keep list manageable
+      const idx = S.inventory.findIndex(i=>i.rarity==='comune');
+      if(idx>-1){
+        S.yang += sellValue(S.inventory[idx]);
+        S.inventory.splice(idx,1);
+      } else {
+        S.inventory.shift();
+      }
+    }
+  }
+
+  // small chance monster retaliates before dying (danger sim)
+  S.killCount++;
+  spawnMonster();
+}
+
+function gainXp(amount){
+  S.xp += amount;
+  let need = xpToNext(S.level);
+  while(S.xp >= need){
+    S.xp -= need;
+    S.level++;
+    S.hpMax = totalStat('maxhp');
+    S.hp = S.hpMax;
+    log(`✨ Sei salito al livello <b>${S.level}</b>!`, 'drop');
+    need = xpToNext(S.level);
+  }
+}
+
+function maybeAutoEquip(item){
+  const equipped = S.equipment[item.slot];
+  if(!equipped || itemPower(item) > itemPower(equipped)){
+    if(equipped) S.inventory.push(equipped); // put old one in bag (will be filtered out since we push new below? handled in equipItem)
+    equipItem(item, true);
+  }
+}
+function equipItem(item, fromAuto){
+  const old = S.equipment[item.slot];
+  S.equipment[item.slot] = item;
+  // remove from inventory (item might or might not be in inventory depending on path)
+  S.inventory = S.inventory.filter(i=>i.uid!==item.uid);
+  if(old){
+    if(!fromAuto) S.inventory.push(old);
+  }
+  S.hpMax = totalStat('maxhp');
+  if(!fromAuto) log(`Hai equipaggiato <b>${item.name}</b>.`);
+  renderAll();
+}
+function sellItem(item){
+  S.yang += sellValue(item);
+  S.inventory = S.inventory.filter(i=>i.uid!==item.uid);
+  renderAll();
+}
+
+function showFloatingNumber(dmg){
+  const stage = document.querySelector('.combat-stage');
+  const el = document.createElement('div');
+  el.className='floatnum';
+  el.textContent = '-'+fmt(dmg);
+  el.style.left = (40+Math.random()*40)+'%';
+  el.style.top = '50%';
+  stage.appendChild(el);
+  setTimeout(()=>el.remove(), 720);
+}
+function pulseGlyph(){
+  const g = document.getElementById('monster-glyph');
+  g.classList.add('hit');
+  setTimeout(()=>g.classList.remove('hit'), 90);
+}
+
+/* =====================================================
+   UPGRADES
+===================================================== */
+function upgradeCost(def){
+  const lvl = S.upgrades[def.key];
+  return Math.floor(def.base * Math.pow(def.growth, lvl));
+}
+function buyUpgrade(key){
+  const def = UPGRADE_DEFS.find(u=>u.key===key);
+  const cost = upgradeCost(def);
+  if(S.yang < cost) return;
+  S.yang -= cost;
+  S.upgrades[key]++;
+  S.hpMax = totalStat('maxhp');
+  renderAll();
+}
+
+function prestigeCost(def){
+  const lvl = S.prestigeUpgrades[def.key];
+  return Math.floor(def.base * Math.pow(def.growth, lvl));
+}
+function buyPrestigeUpgrade(key){
+  const def = PRESTIGE_UPGRADE_DEFS.find(u=>u.key===key);
+  const cost = prestigeCost(def);
+  if(S.gems < cost) return;
+  S.gems -= cost;
+  S.prestigeUpgrades[key]++;
+  S.hpMax = totalStat('maxhp');
+  renderAll();
+}
+
+function canPrestige(){ return S.level >= 25; }
+function prestigeGain(){
+  return Math.floor(S.level/5) + Math.floor(S.totalKills/40);
+}
+function doPrestige(){
+  if(!canPrestige()) return;
+  const gain = prestigeGain();
+  const keepGems = S.gems + gain;
+  const keepPrestige = S.prestigeUpgrades;
+  const keepTotalKills = S.totalKills;
+  S = freshState();
+  S.gems = keepGems;
+  S.prestigeUpgrades = keepPrestige;
+  S.totalKills = keepTotalKills;
+  S.hpMax = totalStat('maxhp');
+  S.hp = S.hpMax;
+  spawnMonster();
+  log(`🔥 Sei rinato con nuova forza! +${gain} 💎 Gemme di Prestigio.`, 'legend');
+  renderAll();
+}
+
+/* =====================================================
+   RENDER
+===================================================== */
+function renderTop(){
+  document.getElementById('res-yang').textContent = fmt(S.yang);
+  document.getElementById('res-gem').textContent = fmt(S.gems);
+  document.getElementById('lv-num').textContent = S.level;
+  const need = xpToNext(S.level);
+  document.getElementById('xp-label').textContent = `${fmt(S.xp)} / ${fmt(need)} XP`;
+  document.getElementById('xp-fill').style.width = Math.min(100,(S.xp/need)*100)+'%';
+}
+function renderStats(){
+  document.getElementById('stat-atk').textContent = fmt(totalStat('atk'));
+  document.getElementById('stat-def').textContent = fmt(totalStat('def'));
+  document.getElementById('stat-maxhp').textContent = fmt(totalStat('maxhp'));
+  document.getElementById('stat-drop').textContent = totalStat('drop').toFixed(1)+'%';
+  document.getElementById('stat-gold').textContent = ((goldMultiplier()-1)*100).toFixed(0)+'%';
+  document.getElementById('stat-speed').textContent = (1/totalStat('speed')).toFixed(2)+'/s';
+
+  const hpFill = document.getElementById('player-hp-fill');
+  hpFill.style.width = Math.max(0,(S.hp/S.hpMax)*100)+'%';
+  document.getElementById('player-hp-label').textContent = `${fmt(S.hp)}/${fmt(S.hpMax)}`;
+}
+function renderGear(){
+  const grid = document.getElementById('gear-grid');
+  grid.innerHTML = '';
+  SLOT_KEYS.forEach(slot=>{
+    const def = SLOT_DEFS[slot];
+    const item = S.equipment[slot];
+    const div = document.createElement('div');
+    div.className = 'gear-slot';
+    if(item){
+      div.innerHTML = `<div class="slot-label">${def.icon} ${def.label}</div>
+        <div class="slot-item rar-${item.rarity}">${item.name}</div>
+        <div class="slot-stat">+${fmt(item.statValue)} ${item.statLabel}</div>`;
+    } else {
+      div.innerHTML = `<div class="slot-label">${def.icon} ${def.label}</div><div class="slot-item slot-empty">vuoto</div>`;
+    }
+    grid.appendChild(div);
+  });
+}
+function renderZoneTabs(){
+  const wrap = document.getElementById('zone-tabs');
+  wrap.innerHTML = '';
+  ZONES.forEach(z=>{
+    const locked = S.level < z.reqLevel;
+    const btn = document.createElement('div');
+    btn.className = 'zone-tab' + (z.id===S.zoneId?' active':'') + (locked?' locked':'');
+    btn.textContent = locked ? `🔒 ${z.name} (Lv.${z.reqLevel})` : z.name;
+    if(!locked){
+      btn.onclick = ()=>{
+        if(S.zoneId===z.id) return;
+        S.zoneId = z.id;
+        S.killCount = 0;
+        spawnMonster();
+        renderAll();
+      };
+    }
+    wrap.appendChild(btn);
+  });
+}
+function renderCombat(){
+  document.getElementById('stage-zone').textContent = currentZone().name;
+  const m = S.monster;
+  if(!m) return;
+  const nameEl = document.getElementById('monster-name');
+  nameEl.textContent = (m.isBoss?'👑 ':'') + m.name;
+  nameEl.className = 'monster-name' + (m.isBoss?' boss':'');
+  document.getElementById('monster-glyph').textContent = m.glyph;
+  document.getElementById('monster-hp-label').textContent = `${fmt(Math.max(0,m.hp))} / ${fmt(m.hpMax)}`;
+  document.getElementById('monster-hp-fill').style.width = Math.max(0,(m.hp/m.hpMax)*100)+'%';
+}
+function renderUpgrades(){
+  const list = document.getElementById('upgrade-list');
+  list.innerHTML = '';
+  UPGRADE_DEFS.forEach(def=>{
+    const cost = upgradeCost(def);
+    const row = document.createElement('div');
+    row.className = 'upgrade-row';
+    row.innerHTML = `<div class="upgrade-info">
+        <div class="u-name">${def.name}</div>
+        <div class="u-desc">${def.desc}</div>
+        <div class="u-lvl">Livello ${S.upgrades[def.key]}</div>
+      </div>
+      <button class="buy-btn" ${S.yang<cost?'disabled':''}>💰 ${fmt(cost)}</button>`;
+    row.querySelector('button').onclick = ()=>buyUpgrade(def.key);
+    list.appendChild(row);
+  });
+}
+function renderInventory(){
+  const grid = document.getElementById('inv-grid');
+  grid.innerHTML = '';
+  if(S.inventory.length===0){
+    grid.innerHTML = '<div class="inv-empty">Nessun oggetto. Continua a cacciare!</div>';
+    return;
+  }
+  const sorted = [...S.inventory].sort((a,b)=>itemPower(b)-itemPower(a));
+  sorted.forEach(item=>{
+    const div = document.createElement('div');
+    div.className = 'inv-item';
+    div.innerHTML = `<span class="ii-icon">${SLOT_DEFS[item.slot].icon}</span>
+      <span class="ii-name rar-${item.rarity}">${item.name}</span>
+      <span style="color:var(--text-faint)">+${fmt(item.statValue)} ${item.statLabel}</span>`;
+    div.title = `${item.rarityLabel} · Clic sinistro: equipaggia · Clic destro: vendi (${sellValue(item)} 💰)`;
+    div.onclick = ()=>equipItem(item,false);
+    div.oncontextmenu = (e)=>{ e.preventDefault(); sellItem(item); };
+    grid.appendChild(div);
+  });
+}
+function renderPrestige(){
+  const box = document.getElementById('prestige-box');
+  const btn = document.getElementById('prestige-btn');
+  if(canPrestige()){
+    box.textContent = `Puoi rinascere ora per ottenere ${prestigeGain()} 💎 Gemme permanenti. La rinascita azzera livello, Yang, equipaggiamento e potenziamenti (le Gemme e i loro potenziamenti restano).`;
+    btn.disabled = false;
+  } else {
+    box.textContent = `Raggiungi il livello 25 per poter rinascere (attuale: ${S.level}).`;
+    btn.disabled = true;
+  }
+  btn.textContent = `Rinasci (+${prestigeGain()} 💎)`;
+
+  const wrap = document.getElementById('prestige-upgrades');
+  wrap.innerHTML = '';
+  PRESTIGE_UPGRADE_DEFS.forEach(def=>{
+    const cost = prestigeCost(def);
+    const row = document.createElement('div');
+    row.className = 'upgrade-row';
+    row.innerHTML = `<div class="upgrade-info">
+        <div class="u-name">${def.name}</div>
+        <div class="u-desc">${def.desc}</div>
+        <div class="u-lvl">Livello ${S.prestigeUpgrades[def.key]}</div>
+      </div>
+      <button class="buy-btn" ${S.gems<cost?'disabled':''}>💎 ${fmt(cost)}</button>`;
+    row.querySelector('button').onclick = ()=>buyPrestigeUpgrade(def.key);
+    wrap.appendChild(row);
+  });
+}
+function renderAll(){
+  renderTop();
+  renderStats();
+  renderGear();
+  renderZoneTabs();
+  renderCombat();
+  renderUpgrades();
+  renderInventory();
+  renderPrestige();
+}
+
+/* =====================================================
+   GAME LOOP
+===================================================== */
+function startLoop(){
+  if(tickTimer) clearInterval(tickTimer);
+  const interval = totalStat('speed')*1000;
+  tickTimer = setInterval(()=>{
+    doAttack(false);
+  }, interval);
+}
+// restart loop whenever speed upgrade changes
+let lastSpeedVal = null;
+function tickWatcher(){
+  const cur = totalStat('speed');
+  if(cur !== lastSpeedVal){
+    lastSpeedVal = cur;
+    startLoop();
+  }
+}
+setInterval(tickWatcher, 300);
+
+/* =====================================================
+   OFFLINE PROGRESS
+===================================================== */
+function applyOfflineProgress(){
+  const now = Date.now();
+  const elapsedSec = Math.min(8*3600, Math.max(0,(now - (S.lastSave||now))/1000));
+  if(elapsedSec < 30) return; // not worth showing
+  const atkPerHit = totalStat('atk');
+  const speed = totalStat('speed');
+  const hitsPerSec = 1/speed;
+  const zone = currentZone();
+  const zoneIdx = ZONES.findIndex(z=>z.id===zone.id);
+  const scaling = Math.pow(1.045, S.level-1) * Math.pow(1.6, zoneIdx);
+  const avgMonsterHp = zone.hpBase * scaling * 1.3;
+  const killsPerSec = (atkPerHit*hitsPerSec) / Math.max(1,avgMonsterHp);
+  const estKills = Math.floor(killsPerSec * elapsedSec * 0.7); // 0.7 offline efficiency
+  if(estKills <= 0) return;
+
+  const avgGold = zone.goldBase * scaling * 1.2;
+  const avgXp = zone.xpBase * scaling * 1.2;
+  const goldGain = Math.round(estKills * avgGold * goldMultiplier());
+  S.yang += goldGain;
+  gainXp(estKills*avgXp);
+  S.totalKills += estKills;
+
+  // some loot too
+  const dropChance = totalStat('drop')/100;
+  const itemsFound = Math.min(15, Math.floor(estKills*dropChance));
+  for(let i=0;i<itemsFound;i++){
+    const item = generateItem();
+    S.inventory.push(item);
+    if(S.autoEquip) maybeAutoEquip(item);
+  }
+
+  const hrs = Math.floor(elapsedSec/3600);
+  const mins = Math.floor((elapsedSec%3600)/60);
+  document.getElementById('offline-text').innerHTML =
+    `Sei stato via <b>${hrs>0?hrs+'h ':''}${mins}m</b>.<br>
+     I tuoi servitori hanno sconfitto <b>${fmt(estKills)}</b> nemici,<br>
+     guadagnando <b>${fmt(goldGain)} 💰</b> e trovando <b>${itemsFound}</b> oggetti.`;
+  document.getElementById('offline-modal').classList.remove('hidden');
+}
+
+/* =====================================================
+   EVENTS
+===================================================== */
+document.getElementById('attack-btn').addEventListener('click', ()=>doAttack(true));
+document.getElementById('offline-close').addEventListener('click', ()=>{
+  document.getElementById('offline-modal').classList.add('hidden');
+  renderAll();
+});
+document.getElementById('auto-equip').addEventListener('change', (e)=>{
+  S.autoEquip = e.target.checked;
+});
+document.getElementById('sell-all-common').addEventListener('click', ()=>{
+  const commons = S.inventory.filter(i=>i.rarity==='comune');
+  let total = 0;
+  commons.forEach(i=>total+=sellValue(i));
+  S.inventory = S.inventory.filter(i=>i.rarity!=='comune');
+  S.yang += total;
+  if(total>0) log(`Hai venduto ${commons.length} oggetti comuni per ${fmt(total)} 💰`);
+  renderAll();
+});
+document.getElementById('prestige-btn').addEventListener('click', ()=>{
+  if(!canPrestige()) return;
+  if(confirm('Sei sicuro di voler rinascere? Perderai livello, Yang, equipaggiamento e potenziamenti normali (le Gemme restano).')){
+    doPrestige();
+  }
+});
+document.getElementById('btn-reset').addEventListener('click', ()=>{
+  if(confirm('Cancellare completamente il salvataggio? Questa azione è irreversibile.')){
+    localStorage.removeItem('pietre-corrotte-save');
+    S = freshState();
+    S.hpMax = totalStat('maxhp');
+    S.hp = S.hpMax;
+    spawnMonster();
+    renderAll();
+  }
+});
+window.addEventListener('beforeunload', save);
+setInterval(save, 10000);
+
+/* =====================================================
+   INIT
+===================================================== */
+function init(){
+  if(!S.monster) spawnMonster();
+  S.hpMax = totalStat('maxhp');
+  if(!S.hp || S.hp<=0) S.hp = S.hpMax;
+  document.getElementById('auto-equip').checked = S.autoEquip !== false;
+  applyOfflineProgress();
+  renderAll();
+  startLoop();
+}
+init();
+
+})();
+</script>
+</body>
+</html>
