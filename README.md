@@ -5,8 +5,8 @@ equipaggiamento a rarità crescente, potenzia il tuo eroe e rinasci per bonus pe
 Un solo file statico (`index.html`), nessuna build, nessun backend: il salvataggio è nel `localStorage` del browser.
 
 ## Come funziona il gioco
-- **Combattimento automatico**: il tuo eroe attacca da solo a intervalli regolari; puoi anche cliccare "Colpisci" per danno extra manuale.
-- **Zone**: 5 zone da sbloccare salendo di livello, ognuna con mostri e boss (ogni 10 uccisioni) più forti.
+- **Combattimento**: parte in pausa. Premi "▶ Avvia caccia" per attivare l'attacco automatico a intervalli regolari, oppure clicca "Colpisci" in qualsiasi momento per danno extra manuale.
+- **Zone e mostri**: 5 zone ispirate ai veri luoghi e mostri di Metin2 (Prati di Yongan, Selvaggi ed Eid del Valico, Territorio degli Orchi, Rovine degli Esoterici, Terre dei Demoni), con boss ogni 10 uccisioni che richiamano i nomi reali del gioco (Metin del Dolore, Metin della Lotta, Capo Orco, Capobanda Oscuro, Spirito della Morte).
 - **Bottino**: gli oggetti droppano in 4 rarità (Comune → Raro → Epico → Leggendario) su 4 slot (Arma, Armatura, Elmo, Amuleto).
 - **Potenziamenti**: spendi Yang (oro) per aumentare Attacco, Difesa, Velocità, Vita, Bottino e guadagno d'oro.
 - **Rinascita**: dal livello 25 puoi rinascere, azzerando i progressi normali in cambio di Gemme permanenti spendibili in bonus che restano per sempre.

@@ -16,12 +16,12 @@
   --bg-inset:#0e1420;
   --border:#233046;
   --border-soft:#1b2436;
-  --jade:#3fa796;
-  --jade-dim:#2a7268;
-  --gold:#d4af6a;
-  --gold-dim:#9c7d43;
-  --blood:#c94f4f;
-  --blood-dim:#7a3232;
+  --jade:#c23b32;
+  --jade-dim:#7a231c;
+  --gold:#e0b258;
+  --gold-dim:#a3792f;
+  --blood:#e0983f;
+  --blood-dim:#8a5620;
   --text:#e8e3d3;
   --text-muted:#8892a0;
   --text-faint:#5b6472;
@@ -38,8 +38,8 @@
 html,body{margin:0;padding:0;}
 body{
   background:
-    radial-gradient(ellipse at top, rgba(63,167,150,0.06), transparent 60%),
-    radial-gradient(ellipse at bottom right, rgba(201,79,79,0.05), transparent 55%),
+    radial-gradient(ellipse at top, rgba(194,59,50,0.06), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(224,178,88,0.05), transparent 55%),
     var(--bg-void);
   color:var(--text);
   font-family:var(--font-body);
@@ -84,7 +84,7 @@ a{color:var(--jade);}
   font-size:22px;
   letter-spacing:0.04em;
   color:var(--text);
-  text-shadow:0 0 18px rgba(63,167,150,0.35);
+  text-shadow:0 0 18px rgba(194,59,50,0.35);
 }
 .brand-sub{
   font-size:11px;
@@ -264,7 +264,7 @@ a{color:var(--jade);}
 /* ---------- Combat area ---------- */
 .combat-stage{
   background:
-    radial-gradient(ellipse at center, rgba(63,167,150,0.08), transparent 65%),
+    radial-gradient(ellipse at center, rgba(194,59,50,0.08), transparent 65%),
     var(--bg-inset);
   border:1px solid var(--border-soft);
   border-radius:10px;
@@ -285,7 +285,7 @@ a{color:var(--jade);}
 .monster-glyph{
   font-size:56px;
   margin-bottom:6px;
-  filter:drop-shadow(0 0 14px rgba(63,167,150,0.25));
+  filter:drop-shadow(0 0 14px rgba(194,59,50,0.25));
   user-select:none;
   transition:transform .08s ease;
 }
@@ -574,7 +574,10 @@ footer.credits{
           <div class="monster-name" id="monster-name">—</div>
           <div class="monster-hp-label" id="monster-hp-label">0 / 0</div>
           <div class="monster-hpbar"><div id="monster-hp-fill" class="monster-hpbar-fill" style="width:100%"></div></div>
-          <button class="attack-btn" id="attack-btn">⚔ Colpisci</button>
+          <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <button class="attack-btn" id="attack-btn">⚔ Colpisci</button>
+            <button class="attack-btn" id="hunt-toggle" style="background:linear-gradient(180deg, var(--gold), var(--gold-dim)); box-shadow:0 4px 0 var(--gold-dim), 0 6px 14px rgba(0,0,0,0.35);">▶ Avvia caccia</button>
+          </div>
         </div>
 
         <div class="panel-title">Registro di caccia<span class="line"></span></div>
@@ -649,18 +652,18 @@ const ITEM_NAMES = {
 };
 
 const ZONES = [
-  {id:'foresta', name:'Foresta Corrotta', reqLevel:1, glyphs:['🐺','🐗','👺'], boss:'🌲', bossName:'Custode della Foresta', hpBase:18, goldBase:4, xpBase:5},
-  {id:'palude', name:'Palude delle Ombre', reqLevel:10, glyphs:['🐸','👻','🧙'], boss:'🌫', bossName:'Signora delle Ombre', hpBase:70, goldBase:12, xpBase:14},
-  {id:'rovine', name:'Rovine di Jinno', reqLevel:20, glyphs:['💀','🏹','🗿'], boss:'⚔', bossName:'Generale Decaduto', hpBase:220, goldBase:32, xpBase:34},
-  {id:'vulcano', name:'Vulcano dei Demoni', reqLevel:35, glyphs:['👹','🌋','🐕'], boss:'🔥', bossName:'Signore delle Fiamme', hpBase:650, goldBase:80, xpBase:78},
-  {id:'santuario', name:'Santuario del Metin', reqLevel:50, glyphs:['🗿','👁','🕷'], boss:'💠', bossName:'Cuore del Metin', hpBase:1800, goldBase:210, xpBase:190}
+  {id:'yongan', name:'Prati di Yongan · Shinsoo', reqLevel:1, glyphs:['🐺','🐗','🐻'], boss:'🩸', bossName:'Metin del Dolore', hpBase:18, goldBase:4, xpBase:5},
+  {id:'jayang', name:'Valico dei Selvaggi · Shinsoo', reqLevel:10, glyphs:['🏹','👹','🐯'], boss:'⚔️', bossName:'Metin della Lotta', hpBase:70, goldBase:12, xpBase:14},
+  {id:'orchi', name:'Territorio degli Orchi · Chunjo', reqLevel:20, glyphs:['👺','🪓','🧌'], boss:'👑', bossName:'Capo Orco', hpBase:220, goldBase:32, xpBase:34},
+  {id:'esoterici', name:'Rovine degli Esoterici · Jinno', reqLevel:35, glyphs:['🧙','🌪','🦂'], boss:'🌑', bossName:'Capobanda Oscuro', hpBase:650, goldBase:80, xpBase:78},
+  {id:'demoni', name:'Terre dei Demoni', reqLevel:50, glyphs:['👹','🧟','👁'], boss:'💀', bossName:'Spirito della Morte', hpBase:1800, goldBase:210, xpBase:190}
 ];
 const MONSTER_NAMES = {
-  foresta:['Lupo Corrotto','Cinghiale Marcio','Sciamano Goblin'],
-  palude:['Rospo Velenoso','Spettro Palustre','Strega delle Nebbie'],
-  rovine:['Guerriero Caduto','Arciere Spettrale','Statua Animata'],
-  vulcano:['Imp di Fuoco','Golem di Lava','Cane Infernale'],
-  santuario:['Custode di Pietra','Ombra del Metin','Servo Corrotto']
+  yongan:['Lupo','Cinghiale','Orso Nero'],
+  jayang:['Selvaggio','Eid','Tigre Bianca'],
+  orchi:['Fiero Orco','Orco Esploratore','Orco Mago'],
+  esoterici:['Esoterico','Soldato Vento Oscuro','Manticora'],
+  demoni:['Demone','Troll','Spirito Capobanda Oscuro']
 };
 
 const UPGRADE_DEFS = [
@@ -686,7 +689,7 @@ function freshState(){
   return {
     level:1, xp:0, yang:0, gems:0,
     hp:100, hpMax:100,
-    zoneId:'foresta',
+    zoneId:'yongan',
     killCount:0,
     inBoss:false,
     equipment:{arma:null, armatura:null, elmo:null, amuleto:null},
@@ -695,6 +698,7 @@ function freshState(){
     prestigeUpgrades:{p_atk:0, p_gold:0, p_drop:0, p_hp:0},
     monster:null,
     autoEquip:true,
+    autoHunting:false,
     lastSave:Date.now(),
     totalKills:0
   };
@@ -1191,14 +1195,23 @@ function renderAll(){
 ===================================================== */
 function startLoop(){
   if(tickTimer) clearInterval(tickTimer);
+  tickTimer = null;
+  if(!S.autoHunting) return;
   const interval = totalStat('speed')*1000;
   tickTimer = setInterval(()=>{
     doAttack(false);
   }, interval);
 }
-// restart loop whenever speed upgrade changes
+function setAutoHunting(on){
+  S.autoHunting = on;
+  const btn = document.getElementById('hunt-toggle');
+  btn.textContent = on ? '⏸ Pausa caccia' : '▶ Avvia caccia';
+  startLoop();
+}
+// restart loop whenever speed upgrade changes (while hunting is active)
 let lastSpeedVal = null;
 function tickWatcher(){
+  if(!S.autoHunting) return;
   const cur = totalStat('speed');
   if(cur !== lastSpeedVal){
     lastSpeedVal = cur;
@@ -1254,6 +1267,7 @@ function applyOfflineProgress(){
    EVENTS
 ===================================================== */
 document.getElementById('attack-btn').addEventListener('click', ()=>doAttack(true));
+document.getElementById('hunt-toggle').addEventListener('click', ()=>setAutoHunting(!S.autoHunting));
 document.getElementById('offline-close').addEventListener('click', ()=>{
   document.getElementById('offline-modal').classList.add('hidden');
   renderAll();
@@ -1299,6 +1313,7 @@ function init(){
   document.getElementById('auto-equip').checked = S.autoEquip !== false;
   applyOfflineProgress();
   renderAll();
+  document.getElementById('hunt-toggle').textContent = S.autoHunting ? '⏸ Pausa caccia' : '▶ Avvia caccia';
   startLoop();
 }
 init();
