@@ -449,6 +449,19 @@ a{color:var(--jade);}
 .inv-item .ii-icon{font-size:17px;display:block;margin-bottom:3px;}
 .inv-item .ii-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
 .inv-empty{color:var(--text-faint);font-size:11.5px;font-style:italic;text-align:center;padding:20px 0;grid-column:1/-1;}
+.inv-item.empty{
+  cursor:default;
+  border-style:dashed;
+  color:var(--text-faint);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:52px;
+}
+.inv-item.empty:hover{border-color:var(--border-soft);}
+.gear-btn-row{display:flex; gap:4px; margin-top:6px;}
+.gear-btn-row .buy-btn{min-width:auto; flex:1; padding:5px 4px; font-size:10px;}
+.unequip-btn{color:var(--blood) !important;}
 
 /* ---------- Prestige ---------- */
 .prestige-box{
@@ -580,7 +593,12 @@ footer.credits{
         </div>
         <div class="panel-title" style="margin-top:6px;">Equipaggiamento<span class="line"></span></div>
         <div class="gear-grid" id="gear-grid"></div>
-        <div class="tooltip-hint">Clicca un oggetto in Bottino per equipaggiarlo</div>
+        <div class="tooltip-hint">Clicca un oggetto in Inventario per equipaggiarlo</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Titoli<span class="line"></span></div>
+        <div id="title-list"></div>
       </div>
     </div>
 
@@ -621,17 +639,13 @@ footer.credits{
       </div>
 
       <div class="panel">
-        <div class="panel-title">Bottino<span class="line"></span></div>
+        <div class="panel-title">Inventario<span class="line"></span></div>
         <div class="inv-toolbar">
           <label><input type="checkbox" id="auto-equip" checked> auto-equipaggia se migliore</label>
+          <span id="inv-count" style="font-family:var(--font-mono);">0/24</span>
           <button class="buy-btn" id="sell-all-common" style="min-width:auto;">vendi comuni</button>
         </div>
         <div class="inv-grid" id="inv-grid"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Titoli<span class="line"></span></div>
-        <div id="title-list"></div>
       </div>
 
       <div class="panel">
@@ -823,6 +837,7 @@ function unlockedZones(){ return ZONES.filter(z=>S.level>=z.reqLevel); }
 
 function currentClass(){ return CLASSES.find(c=>c.key===S.classKey) || CLASSES[0]; }
 function currentTitle(){ return TITLES.find(t=>t.key===S.equippedTitle) || null; }
+function classIcon(key){ const c = CLASSES.find(c=>c.key===key); return c ? c.icon : ''; }
 
 function totalStat(key){
   const cls = currentClass();
@@ -923,7 +938,8 @@ function generateItem(){
     statType: def.stat==='hp' ? 'maxhp' : def.stat,
     statLabel: def.statLabel,
     statValue,
-    refine: 0
+    refine: 0,
+    classKey: slot==='arma' ? currentClass().key : null
   };
 }
 function itemEffectiveValue(item){
@@ -943,6 +959,7 @@ function sellValue(item){
    AFFINAMENTO (RIFINITURA EQUIPAGGIAMENTO)
 ===================================================== */
 const MAX_REFINE = 9;
+const INVENTORY_SIZE = 24;
 function refineCost(item){
   const rarityCostMult = item.rarity==='comune'?1:item.rarity==='raro'?1.4:item.rarity==='epico'?2:3;
   return Math.round((25 + item.refine*35) * rarityCostMult);
@@ -1047,7 +1064,7 @@ function killMonster(){
     const cls = item.rarity==='leggendario'?'legend':(item.rarity==='epico'?'rare':'drop');
     log(`${RARITIES.find(r=>r.key===item.rarity).icon} Bottino: <b>${itemDisplayName(item)}</b> [${item.rarityLabel}]`, cls);
     if(S.autoEquip) maybeAutoEquip(item);
-    if(S.inventory.length > 60){
+    if(S.inventory.length > INVENTORY_SIZE){
       // auto-sell oldest common to keep list manageable
       const idx = S.inventory.findIndex(i=>i.rarity==='comune');
       if(idx>-1){
@@ -1089,6 +1106,7 @@ function gainXp(amount){
 }
 
 function maybeAutoEquip(item){
+  if(item.slot==='arma' && item.classKey && item.classKey !== S.classKey) return;
   const equipped = S.equipment[item.slot];
   if(!equipped || itemPower(item) > itemPower(equipped)){
     if(equipped) S.inventory.push(equipped); // put old one in bag (will be filtered out since we push new below? handled in equipItem)
@@ -1096,6 +1114,10 @@ function maybeAutoEquip(item){
   }
 }
 function equipItem(item, fromAuto){
+  if(item.slot==='arma' && item.classKey && item.classKey !== S.classKey){
+    if(!fromAuto) log(`Solo un ${classIcon(item.classKey)} può usare <b>${item.name}</b>.`, 'danger');
+    return;
+  }
   const old = S.equipment[item.slot];
   S.equipment[item.slot] = item;
   // remove from inventory (item might or might not be in inventory depending on path)
@@ -1110,6 +1132,19 @@ function equipItem(item, fromAuto){
 function sellItem(item){
   S.yang += sellValue(item);
   S.inventory = S.inventory.filter(i=>i.uid!==item.uid);
+  renderAll();
+}
+function unequipItem(slot){
+  const item = S.equipment[slot];
+  if(!item) return;
+  if(S.inventory.length >= INVENTORY_SIZE){
+    log('⚠ Inventario pieno: vendi o equipaggia qualcosa prima di togliere questo oggetto.', 'danger');
+    return;
+  }
+  S.equipment[slot] = null;
+  S.inventory.push(item);
+  S.hpMax = totalStat('maxhp');
+  log(`Hai tolto <b>${itemDisplayName(item)}</b>, ora nell'inventario.`);
   renderAll();
 }
 
@@ -1251,12 +1286,16 @@ function renderGear(){
       const cost = refineCost(item);
       const maxed = item.refine >= MAX_REFINE;
       div.innerHTML = `<div class="slot-label">${def.icon} ${def.label}</div>
-        <div class="slot-item rar-${item.rarity}">${itemDisplayName(item)}</div>
+        <div class="slot-item rar-${item.rarity}">${itemDisplayName(item)}${item.classKey?` <span style="color:var(--text-faint); font-weight:400;">(${classIcon(item.classKey)})</span>`:''}</div>
         <div class="slot-stat">+${fmt(itemEffectiveValue(item))} ${item.statLabel}</div>
-        <button class="buy-btn refine-btn" ${maxed||S.yang<cost?'disabled':''} title="Successo: ${Math.round(refineChance(item)*100)}%">
-          ${maxed ? 'MAX' : '⚒ '+fmt(cost)}
-        </button>`;
+        <div class="gear-btn-row">
+          <button class="buy-btn refine-btn" ${maxed||S.yang<cost?'disabled':''} title="Successo: ${Math.round(refineChance(item)*100)}%">
+            ${maxed ? 'MAX' : '⚒ '+fmt(cost)}
+          </button>
+          <button class="buy-btn unequip-btn" title="Togli l'oggetto">✖ Togli</button>
+        </div>`;
       div.querySelector('.refine-btn').onclick = ()=>refineItem(slot);
+      div.querySelector('.unequip-btn').onclick = ()=>unequipItem(slot);
     } else {
       div.innerHTML = `<div class="slot-label">${def.icon} ${def.label}</div><div class="slot-item slot-empty">vuoto</div>`;
     }
@@ -1314,22 +1353,25 @@ function renderUpgrades(){
 function renderInventory(){
   const grid = document.getElementById('inv-grid');
   grid.innerHTML = '';
-  if(S.inventory.length===0){
-    grid.innerHTML = '<div class="inv-empty">Nessun oggetto. Continua a cacciare!</div>';
-    return;
-  }
+  document.getElementById('inv-count').textContent = `${S.inventory.length}/${INVENTORY_SIZE}`;
   const sorted = [...S.inventory].sort((a,b)=>itemPower(b)-itemPower(a));
-  sorted.forEach(item=>{
+  for(let i=0;i<INVENTORY_SIZE;i++){
+    const item = sorted[i];
     const div = document.createElement('div');
-    div.className = 'inv-item';
-    div.innerHTML = `<span class="ii-icon">${SLOT_DEFS[item.slot].icon}</span>
-      <span class="ii-name rar-${item.rarity}">${itemDisplayName(item)}</span>
-      <span style="color:var(--text-faint)">+${fmt(itemEffectiveValue(item))} ${item.statLabel}</span>`;
-    div.title = `${item.rarityLabel} · Clic sinistro: equipaggia · Clic destro: vendi (${sellValue(item)} 💰)`;
-    div.onclick = ()=>equipItem(item,false);
-    div.oncontextmenu = (e)=>{ e.preventDefault(); sellItem(item); };
+    if(item){
+      div.className = 'inv-item';
+      div.innerHTML = `<span class="ii-icon">${SLOT_DEFS[item.slot].icon}</span>
+        <span class="ii-name rar-${item.rarity}">${itemDisplayName(item)}${item.classKey?` ${classIcon(item.classKey)}`:''}</span>
+        <span style="color:var(--text-faint)">+${fmt(itemEffectiveValue(item))} ${item.statLabel}</span>`;
+      div.title = `${item.rarityLabel} · Clic sinistro: equipaggia · Clic destro: vendi (${sellValue(item)} 💰)`;
+      div.onclick = ()=>equipItem(item,false);
+      div.oncontextmenu = (e)=>{ e.preventDefault(); sellItem(item); };
+    } else {
+      div.className = 'inv-item empty';
+      div.textContent = '·';
+    }
     grid.appendChild(div);
-  });
+  }
 }
 function renderPrestige(){
   const box = document.getElementById('prestige-box');
