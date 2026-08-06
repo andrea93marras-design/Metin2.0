@@ -547,6 +547,21 @@ a{color:var(--jade);}
 }
 .hidden{display:none !important;}
 
+.changelog-entry{margin-bottom:16px;}
+.changelog-entry:last-child{margin-bottom:0;}
+.changelog-version{
+  font-family:var(--font-display);
+  color:var(--gold);
+  font-weight:700;
+  font-size:13px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.changelog-version .cv-date{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); font-weight:400;}
+.changelog-entry ul{margin:6px 0 0; padding-left:18px;}
+.changelog-entry li{font-size:12px; color:var(--text-muted); margin-bottom:3px;}
+
 .tooltip-hint{font-size:10px;color:var(--text-faint);text-align:center;margin-top:6px;}
 footer.credits{
   text-align:center;
@@ -567,6 +582,7 @@ footer.credits{
     <div class="resources">
       <div class="res-pill yang"><span class="ico">💰</span><span id="res-yang">0</span></div>
       <div class="res-pill gem"><span class="ico">💎</span><span id="res-gem">0</span></div>
+      <button id="btn-changelog" class="buy-btn" style="position:relative;" title="Novità e changelog">📜 novità<span id="changelog-dot" class="hidden" style="position:absolute; top:-4px; right:-4px; width:9px; height:9px; border-radius:50%; background:var(--jade); box-shadow:0 0 6px var(--jade);"></span></button>
       <button id="btn-reset" class="buy-btn" style="color:var(--blood);" title="Cancella salvataggio">↺ reset</button>
     </div>
   </div>
@@ -677,6 +693,14 @@ footer.credits{
   </div>
 </div>
 
+<div class="modal-bg hidden" id="changelog-modal">
+  <div class="modal" style="max-width:480px; text-align:left;">
+    <h2 style="text-align:center;">📜 Registro Aggiornamenti</h2>
+    <div id="changelog-list" style="max-height:50vh; overflow-y:auto; margin-top:10px;"></div>
+    <button class="close-btn" id="changelog-close" style="display:block; margin-left:auto; margin-right:auto;">Chiudi</button>
+  </div>
+</div>
+
 <script>
 (function(){
 "use strict";
@@ -684,6 +708,37 @@ footer.credits{
 /* =====================================================
    DATA
 ===================================================== */
+/* =====================================================
+   VERSIONE & CHANGELOG
+   Ogni aggiornamento aggiunge qui una nuova voce: il sistema di
+   salvataggio è pensato per fondersi con le partite esistenti,
+   quindi non serve mai chiedere ai giocatori di ricominciare.
+===================================================== */
+const GAME_VERSION = '1.3.0';
+const CHANGELOG = [
+  {version:'1.3.0', date:'6 ago 2026', notes:[
+    'Nuovo pulsante "✖ Togli" per rimuovere l\u2019equipaggiamento e rimetterlo in inventario',
+    'Pannello Titoli spostato sotto Equipaggiamento',
+    'Armi ora esclusive per classe (es. l\u2019arco solo per il Ninja), con etichetta visibile',
+    'Inventario trasformato in griglia a 24 slot fissi, con contatore posti liberi',
+    'Aggiunto questo registro aggiornamenti, consultabile in qualsiasi momento'
+  ]},
+  {version:'1.2.0', date:'6 ago 2026', notes:[
+    'Aggiunte le 5 classi giocabili di Metin2 (Guerriero, Ninja, Sura, Shamana, Lican)',
+    'Sistema Titoli: sblocca traguardi e indossane uno per un bonus permanente',
+    'Affinamento dell\u2019equipaggiamento equipaggiato, fino a +9, con rischio di fallimento',
+    'Nomi di armi, armature e accessori ispirati a quelli reali di Metin2'
+  ]},
+  {version:'1.1.0', date:'6 ago 2026', notes:[
+    'Restyle grafico dal verde giada a una palette rosso cremisi/oro',
+    'Zone, mostri e boss rinominati con nomi reali di Metin2 (Yongan, Orchi, Metin del Dolore...)',
+    'La caccia automatica ora parte in pausa: pulsante "Avvia caccia" per attivarla quando vuoi'
+  ]},
+  {version:'1.0.0', date:'5 ago 2026', notes:[
+    'Prima versione: combattimento idle, bottino con rarità, zone, potenziamenti, rinascita e progressi offline'
+  ]}
+];
+
 const RARITIES = [
   {key:'comune', label:'Comune', mult:1.0, weight:58, icon:''},
   {key:'raro', label:'Raro', mult:1.7, weight:28, icon:'✦'},
@@ -790,7 +845,9 @@ function freshState(){
     hasLegendary:false,
     prestigeCount:0,
     unlockedTitles:[],
-    equippedTitle:null
+    equippedTitle:null,
+    saveVersion:GAME_VERSION,
+    lastSeenVersion:null
   };
 }
 let S = load() || freshState();
@@ -803,19 +860,31 @@ function save(){
   S.lastSave = Date.now();
   try{ localStorage.setItem('pietre-corrotte-save', JSON.stringify(S)); }catch(e){}
 }
+function normalizeItem(item){
+  if(!item) return item;
+  if(typeof item.refine !== 'number') item.refine = 0;
+  if(item.classKey === undefined) item.classKey = null;
+  return item;
+}
 function load(){
   try{
     const raw = localStorage.getItem('pietre-corrotte-save');
     if(!raw) return null;
     const parsed = JSON.parse(raw);
     const fresh = freshState();
-    // shallow-merge to survive future added fields
-    return Object.assign(fresh, parsed, {
+    // shallow-merge to survive future added fields: any key missing from an old
+    // save simply keeps its fresh default, so updates never require a reset.
+    const merged = Object.assign(fresh, parsed, {
       equipment: Object.assign(fresh.equipment, parsed.equipment||{}),
       upgrades: Object.assign(fresh.upgrades, parsed.upgrades||{}),
       prestigeUpgrades: Object.assign(fresh.prestigeUpgrades, parsed.prestigeUpgrades||{}),
       unlockedTitles: parsed.unlockedTitles || []
     });
+    // backfill fields added to items in later versions (es. refine, classKey)
+    SLOT_KEYS.forEach(slot=>{ merged.equipment[slot] = normalizeItem(merged.equipment[slot]); });
+    merged.inventory = (merged.inventory||[]).map(normalizeItem);
+    merged.saveVersion = GAME_VERSION;
+    return merged;
   }catch(e){ return null; }
 }
 
@@ -1493,6 +1562,29 @@ function applyOfflineProgress(){
 ===================================================== */
 document.getElementById('attack-btn').addEventListener('click', ()=>doAttack(true));
 document.getElementById('hunt-toggle').addEventListener('click', ()=>setAutoHunting(!S.autoHunting));
+
+function renderChangelog(){
+  const list = document.getElementById('changelog-list');
+  list.innerHTML = '';
+  CHANGELOG.forEach(entry=>{
+    const div = document.createElement('div');
+    div.className = 'changelog-entry';
+    div.innerHTML = `<div class="changelog-version">v${entry.version} <span class="cv-date">${entry.date}</span></div>
+      <ul>${entry.notes.map(n=>`<li>${n}</li>`).join('')}</ul>`;
+    list.appendChild(div);
+  });
+}
+function openChangelog(){
+  renderChangelog();
+  document.getElementById('changelog-modal').classList.remove('hidden');
+  document.getElementById('changelog-dot').classList.add('hidden');
+  S.lastSeenVersion = GAME_VERSION;
+  save();
+}
+document.getElementById('btn-changelog').addEventListener('click', openChangelog);
+document.getElementById('changelog-close').addEventListener('click', ()=>{
+  document.getElementById('changelog-modal').classList.add('hidden');
+});
 function renderClassModal(){
   const grid = document.getElementById('class-grid');
   grid.innerHTML = '';
@@ -1544,6 +1636,8 @@ document.getElementById('btn-reset').addEventListener('click', ()=>{
   if(confirm('Cancellare completamente il salvataggio? Questa azione è irreversibile.')){
     localStorage.removeItem('pietre-corrotte-save');
     S = freshState();
+    S.lastSeenVersion = GAME_VERSION;
+    document.getElementById('changelog-dot').classList.add('hidden');
     S.hpMax = totalStat('maxhp');
     S.hp = S.hpMax;
     spawnMonster();
@@ -1565,9 +1659,14 @@ function init(){
   renderAll();
   document.getElementById('hunt-toggle').textContent = S.autoHunting ? '⏸ Pausa caccia' : '▶ Avvia caccia';
   if(!S.classKey){
+    // prima apertura in assoluto: niente pallino, l'aggiornamento è "di serie"
+    S.lastSeenVersion = GAME_VERSION;
     renderClassModal();
   } else {
     applyOfflineProgress();
+    if(S.lastSeenVersion !== GAME_VERSION){
+      document.getElementById('changelog-dot').classList.remove('hidden');
+    }
   }
   startLoop();
 }
