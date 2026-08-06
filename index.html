@@ -244,6 +244,11 @@ a{color:var(--jade);}
 .rar-epico{color:var(--rarity-epico);}
 .rar-leggendario{color:var(--rarity-leggendario);}
 
+.rar-glow-comune{border-color:var(--rarity-comune) !important;}
+.rar-glow-raro{border-color:var(--rarity-raro) !important; box-shadow:0 0 8px rgba(79,143,212,0.4);}
+.rar-glow-epico{border-color:var(--rarity-epico) !important; box-shadow:0 0 9px rgba(164,95,212,0.45);}
+.rar-glow-leggendario{border-color:var(--rarity-leggendario) !important; box-shadow:0 0 11px rgba(224,152,63,0.55);}
+
 /* ---------- Zone tabs ---------- */
 .zone-tabs{
   display:flex;
@@ -254,28 +259,31 @@ a{color:var(--jade);}
 }
 .zone-tab{
   flex:0 0 auto;
-  background:var(--bg-inset);
+  position:relative;
+  background:linear-gradient(180deg, var(--bg-panel-2), var(--bg-inset));
   border:1px solid var(--border-soft);
+  border-top:3px solid var(--gold-dim);
   color:var(--text-muted);
-  padding:8px 13px;
-  border-radius:8px;
+  padding:9px 14px 15px;
+  clip-path:polygon(0 0, 100% 0, 100% 76%, 50% 100%, 0 76%);
   font-size:12px;
   font-weight:600;
   cursor:pointer;
   white-space:nowrap;
   transition:all .15s ease;
+  margin-top:3px;
 }
-.zone-tab:hover{border-color:var(--jade-dim);color:var(--text);}
+.zone-tab:hover{border-top-color:var(--gold);color:var(--text);}
 .zone-tab.active{
-  background:linear-gradient(180deg, var(--jade-dim), var(--jade));
-  color:#0b0e14;
-  border-color:var(--jade);
+  background:linear-gradient(180deg, var(--jade), var(--jade-dim));
+  color:#f5ece0;
+  border-top-color:var(--gold);
 }
 .zone-tab.locked{
   opacity:0.45;
   cursor:not-allowed;
 }
-.zone-tab.locked:hover{border-color:var(--border-soft);color:var(--text-muted);}
+.zone-tab.locked:hover{border-top-color:var(--gold-dim);color:var(--text-muted);}
 
 /* ---------- Combat area ---------- */
 .combat-stage{
@@ -290,6 +298,13 @@ a{color:var(--jade);}
   position:relative;
   margin-bottom:14px;
   overflow:hidden;
+}
+.combat-stage.boss-active{
+  animation:bossPulse 1.3s ease-in-out infinite;
+}
+@keyframes bossPulse{
+  0%,100%{ box-shadow:0 0 0 0 rgba(201,60,50,0), inset 0 0 30px rgba(201,60,50,0.04); }
+  50%{ box-shadow:0 0 26px 5px rgba(201,60,50,0.55), inset 0 0 45px rgba(201,60,50,0.18); }
 }
 .zone-name{
   font-family:var(--font-display);
@@ -334,21 +349,27 @@ a{color:var(--jade);}
   transition:width .12s ease;
 }
 .attack-btn{
-  background:linear-gradient(180deg, var(--jade), var(--jade-dim));
-  color:#08120f;
-  border:none;
+  background:linear-gradient(180deg, var(--jade) 0%, var(--jade-dim) 100%);
+  color:#f5ece0;
+  border:2px solid var(--gold-dim);
   font-family:var(--font-display);
   font-weight:700;
   font-size:14px;
-  letter-spacing:0.04em;
-  padding:12px 28px;
-  border-radius:999px;
+  letter-spacing:0.03em;
+  padding:11px 26px;
+  border-radius:4px;
   cursor:pointer;
-  box-shadow:0 4px 0 var(--jade-dim), 0 6px 14px rgba(0,0,0,0.35);
-  transition:transform .06s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -3px 0 rgba(0,0,0,0.35),
+    0 3px 6px rgba(0,0,0,0.45);
+  transition:transform .06s ease, box-shadow .06s ease;
   user-select:none;
 }
-.attack-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--jade-dim);}
+.attack-btn:active{
+  transform:translateY(2px);
+  box-shadow:inset 0 2px 5px rgba(0,0,0,0.45);
+}
 .floatnum{
   position:absolute;
   font-family:var(--font-mono);
@@ -411,19 +432,21 @@ a{color:var(--jade);}
 .upgrade-info .u-desc{font-size:10.5px;color:var(--text-faint);margin-top:2px;}
 .upgrade-info .u-lvl{font-size:10px;color:var(--jade);font-family:var(--font-mono);margin-top:2px;}
 .buy-btn{
-  background:var(--bg-panel-2);
-  border:1px solid var(--border);
+  background:linear-gradient(180deg, var(--bg-panel-2), var(--bg-void));
+  border:1px solid var(--gold-dim);
   color:var(--gold);
   font-family:var(--font-mono);
   font-size:11.5px;
   font-weight:600;
   padding:8px 10px;
-  border-radius:6px;
+  border-radius:3px;
   cursor:pointer;
   white-space:nowrap;
   min-width:78px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 0 rgba(0,0,0,0.3);
 }
-.buy-btn:hover:not(:disabled){border-color:var(--gold-dim);background:var(--bg-panel);}
+.buy-btn:hover:not(:disabled){border-color:var(--gold);background:linear-gradient(180deg, var(--bg-panel), var(--bg-void));}
+.buy-btn:active:not(:disabled){box-shadow:inset 0 2px 4px rgba(0,0,0,0.4);}
 .buy-btn:disabled{opacity:0.35;cursor:not-allowed;}
 
 /* ---------- Inventory ---------- */
@@ -505,18 +528,23 @@ a{color:var(--jade);}
 .title-tag{font-size:9.5px; color:var(--gold); font-family:var(--font-mono); white-space:nowrap;}
 .prestige-btn{
   width:100%;
-  background:linear-gradient(180deg, var(--gold), var(--gold-dim));
-  color:#1a1408;
-  border:none;
+  background:linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%);
+  color:#241a08;
+  border:2px solid #5a3f18;
   font-family:var(--font-display);
   font-weight:700;
   font-size:12.5px;
-  letter-spacing:0.03em;
+  letter-spacing:0.02em;
   padding:10px;
-  border-radius:8px;
+  border-radius:4px;
   cursor:pointer;
   margin-top:8px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    inset 0 -3px 0 rgba(0,0,0,0.3),
+    0 3px 6px rgba(0,0,0,0.4);
 }
+.prestige-btn:active:not(:disabled){box-shadow:inset 0 2px 5px rgba(0,0,0,0.4);}
 .prestige-btn:disabled{opacity:0.35;cursor:not-allowed;filter:grayscale(0.4);}
 
 /* ---------- Modal ---------- */
@@ -549,15 +577,17 @@ a{color:var(--jade);}
 .modal p{font-size:13px;color:var(--text-muted);margin:6px 0;}
 .modal .close-btn{
   margin-top:16px;
-  background:var(--jade);
-  border:none;
-  color:#08120f;
+  background:linear-gradient(180deg, var(--jade) 0%, var(--jade-dim) 100%);
+  border:2px solid var(--gold-dim);
+  color:#f5ece0;
   font-weight:700;
   padding:10px 22px;
-  border-radius:999px;
+  border-radius:4px;
   cursor:pointer;
   font-family:var(--font-display);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -3px 0 rgba(0,0,0,0.3), 0 3px 6px rgba(0,0,0,0.4);
 }
+.modal .close-btn:active{box-shadow:inset 0 2px 4px rgba(0,0,0,0.4);}
 .hidden{display:none !important;}
 
 .changelog-entry{margin-bottom:16px;}
@@ -651,7 +681,7 @@ footer.credits{
           <div class="monster-hpbar"><div id="monster-hp-fill" class="monster-hpbar-fill" style="width:100%"></div></div>
           <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
             <button class="attack-btn" id="attack-btn">⚔ Colpisci</button>
-            <button class="attack-btn" id="hunt-toggle" style="background:linear-gradient(180deg, var(--gold), var(--gold-dim)); box-shadow:0 4px 0 var(--gold-dim), 0 6px 14px rgba(0,0,0,0.35);">▶ Avvia caccia</button>
+            <button class="attack-btn" id="hunt-toggle" style="background:linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%); color:#241a08;">▶ Avvia caccia</button>
           </div>
         </div>
 
@@ -727,8 +757,14 @@ footer.credits{
    salvataggio è pensato per fondersi con le partite esistenti,
    quindi non serve mai chiedere ai giocatori di ricominciare.
 ===================================================== */
-const GAME_VERSION = '1.4.0';
+const GAME_VERSION = '1.5.0';
 const CHANGELOG = [
+  {version:'1.5.0', date:'6 ago 2026', notes:[
+    'Bordo luminoso colorato per rarità su oggetti equipaggiati e in inventario (bianco/blu/viola/arancio)',
+    'Bagliore rosso pulsante attorno all\u2019arena durante i combattimenti contro boss e Metin',
+    'Tab delle zone ridisegnate come stendardi appesi, con bordo superiore dorato',
+    'Pulsanti ridisegnati con effetto "intagliato" (rilievo, bordo dorato) al posto del gradiente a pillola'
+  ]},
   {version:'1.4.0', date:'6 ago 2026', notes:[
     'Cornici intagliate con angoli dorati a diamante su pannelli, finestre e arena di combattimento',
     'Leggera texture "a grana" sui pannelli per un effetto più materico',
@@ -1369,7 +1405,7 @@ function renderGear(){
     const def = SLOT_DEFS[slot];
     const item = S.equipment[slot];
     const div = document.createElement('div');
-    div.className = 'gear-slot';
+    div.className = 'gear-slot' + (item ? ` rar-glow-${item.rarity}` : '');
     if(item){
       const cost = refineCost(item);
       const maxed = item.refine >= MAX_REFINE;
@@ -1420,6 +1456,7 @@ function renderCombat(){
   document.getElementById('monster-glyph').textContent = m.glyph;
   document.getElementById('monster-hp-label').textContent = `${fmt(Math.max(0,m.hp))} / ${fmt(m.hpMax)}`;
   document.getElementById('monster-hp-fill').style.width = Math.max(0,(m.hp/m.hpMax)*100)+'%';
+  document.querySelector('.combat-stage').classList.toggle('boss-active', !!m.isBoss);
 }
 function renderUpgrades(){
   const list = document.getElementById('upgrade-list');
@@ -1447,7 +1484,7 @@ function renderInventory(){
     const item = sorted[i];
     const div = document.createElement('div');
     if(item){
-      div.className = 'inv-item';
+      div.className = `inv-item rar-glow-${item.rarity}`;
       div.innerHTML = `<span class="ii-icon">${SLOT_DEFS[item.slot].icon}</span>
         <span class="ii-name rar-${item.rarity}">${itemDisplayName(item)}${item.classKey?` ${classIcon(item.classKey)}`:''}</span>
         <span style="color:var(--text-faint)">+${fmt(itemEffectiveValue(item))} ${item.statLabel}</span>`;
