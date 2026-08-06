@@ -31,9 +31,9 @@
   --rarity-leggendario:#e0983f;
   --radius:10px;
   --frame-svg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect x='4' y='4' width='72' height='72' fill='none' stroke='%23e0b258' stroke-width='2'/%3E%3Crect x='9' y='9' width='62' height='62' fill='none' stroke='%237a231c' stroke-width='1' opacity='0.55'/%3E%3Cg fill='%23e0b258'%3E%3Crect x='1' y='1' width='6' height='6' transform='rotate(45 4 4)'/%3E%3Crect x='73' y='1' width='6' height='6' transform='rotate(45 76 4)'/%3E%3Crect x='1' y='73' width='6' height='6' transform='rotate(45 4 76)'/%3E%3Crect x='73' y='73' width='6' height='6' transform='rotate(45 76 76)'/%3E%3C/g%3E%3C/svg%3E");
-  --font-display:'Noto Serif TC', 'Cinzel', serif;
-  --font-brand:'Ma Shan Zheng', var(--font-display), cursive;
-  --font-body:'Inter', sans-serif;
+  --font-display:'Ma Shan Zheng', 'Noto Serif TC', serif;
+  --font-brand:var(--font-display);
+  --font-body:'Ma Shan Zheng', 'Noto Serif TC', serif;
   --font-mono:'JetBrains Mono', monospace;
 }
 *{box-sizing:border-box;}
@@ -757,8 +757,13 @@ footer.credits{
    salvataggio è pensato per fondersi con le partite esistenti,
    quindi non serve mai chiedere ai giocatori di ricominciare.
 ===================================================== */
-const GAME_VERSION = '1.5.0';
+const GAME_VERSION = '1.6.0';
 const CHANGELOG = [
+  {version:'1.6.0', date:'6 ago 2026', notes:[
+    'Font calligrafico "Pietre Corrotte" (Ma Shan Zheng) esteso a tutta l\u2019interfaccia',
+    'I numeri (oro, statistiche, HP/XP, prezzi) restano in monospazio per rimanere leggibili a colpo d\u2019occhio',
+    'Nuove icone per le 5 classi: Guerriero 🛡️, Ninja 🥷, Sura 💀, Shamana 🔔, Lican 🐺'
+  ]},
   {version:'1.5.0', date:'6 ago 2026', notes:[
     'Bordo luminoso colorato per rarità su oggetti equipaggiati e in inventario (bianco/blu/viola/arancio)',
     'Bagliore rosso pulsante attorno all\u2019arena durante i combattimenti contro boss e Metin',
@@ -825,11 +830,11 @@ const ITEM_NAMES = {
 
 // Le 5 classi giocabili di Metin2, con un piccolo profilo di bonus distintivo
 const CLASSES = [
-  {key:'guerriero', name:'Guerriero', icon:'⚔️', desc:'Forza corporea e difesa solida: il pilastro della mischia.', bonusPct:{atk:5, def:20, hp:15, drop:0, gold:0}, speedBonus:0},
-  {key:'ninja', name:'Ninja', icon:'🏹', desc:'Rapido e letale, colpisce spesso ma con meno corazza.', bonusPct:{atk:10, def:-5, hp:-5, drop:8, gold:0}, speedBonus:0.15},
-  {key:'sura', name:'Sura', icon:'🔮', desc:'Magia oscura: il danno più alto, ma meno vitalità.', bonusPct:{atk:22, def:0, hp:-8, drop:0, gold:0}, speedBonus:0},
-  {key:'shamana', name:'Shamana', icon:'🎐', desc:'Fortuna e commercio: la classe ideale per il farming.', bonusPct:{atk:-8, def:0, hp:0, drop:25, gold:18}, speedBonus:0},
-  {key:'lican', name:'Lican', icon:'🐾', desc:'Ferocia selvaggia allo stato puro, equilibrata su tutto.', bonusPct:{atk:15, def:10, hp:8, drop:-5, gold:-5}, speedBonus:0.04}
+  {key:'guerriero', name:'Guerriero', icon:'🛡️', desc:'Forza corporea e difesa solida: il pilastro della mischia.', bonusPct:{atk:5, def:20, hp:15, drop:0, gold:0}, speedBonus:0},
+  {key:'ninja', name:'Ninja', icon:'🥷', desc:'Rapido e letale, colpisce spesso ma con meno corazza.', bonusPct:{atk:10, def:-5, hp:-5, drop:8, gold:0}, speedBonus:0.15},
+  {key:'sura', name:'Sura', icon:'💀', desc:'Magia oscura: il danno più alto, ma meno vitalità.', bonusPct:{atk:22, def:0, hp:-8, drop:0, gold:0}, speedBonus:0},
+  {key:'shamana', name:'Shamana', icon:'🔔', desc:'Fortuna e commercio: la classe ideale per il farming.', bonusPct:{atk:-8, def:0, hp:0, drop:25, gold:18}, speedBonus:0},
+  {key:'lican', name:'Lican', icon:'🐺', desc:'Ferocia selvaggia allo stato puro, equilibrata su tutto.', bonusPct:{atk:15, def:10, hp:8, drop:-5, gold:-5}, speedBonus:0.04}
 ];
 
 const ZONES = [
