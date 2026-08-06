@@ -641,7 +641,17 @@ footer.credits{
     <div>
       <div class="panel">
         <div class="panel-title">Eroe<span class="line"></span></div>
-        <div id="class-badge" style="font-family:var(--font-mono); font-size:11.5px; color:var(--gold); margin:-6px 0 10px;">—</div>
+        <div style="display:flex; align-items:center; gap:12px; margin:-2px 0 14px;">
+          <div id="avatar-wrap" style="position:relative; width:60px; height:60px; flex:0 0 auto; cursor:pointer;" title="Clicca per cambiare immagine · click destro per rimuoverla">
+            <div id="avatar-circle" style="width:60px; height:60px; border-radius:50%; border:3px solid var(--gold-dim); background:var(--bg-inset); display:flex; align-items:center; justify-content:center; font-size:26px; overflow:hidden;">🛡️</div>
+            <div style="position:absolute; bottom:-2px; right:-2px; background:var(--gold); color:#241a08; border-radius:50%; width:19px; height:19px; display:flex; align-items:center; justify-content:center; font-size:10px; border:2px solid var(--bg-panel);">✎</div>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div id="char-name-display" style="font-family:var(--font-display); font-size:17px; color:var(--gold); cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="Clicca per rinominare">Eroe</div>
+            <div id="class-badge" style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted); margin-top:2px;">—</div>
+          </div>
+        </div>
+        <input type="file" id="avatar-input" accept="image/*" class="hidden">
         <div class="char-stats">
           <div class="stat-row"><span>Attacco</span><b id="stat-atk">0</b></div>
           <div class="stat-row"><span>Difesa</span><b id="stat-def">0</b></div>
