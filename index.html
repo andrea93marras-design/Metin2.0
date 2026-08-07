@@ -625,6 +625,7 @@ footer.credits{
     <div class="resources">
       <div class="res-pill yang"><span class="ico">💰</span><span id="res-yang">0</span></div>
       <div class="res-pill gem"><span class="ico">💎</span><span id="res-gem">0</span></div>
+      <button id="btn-leaderboard" class="buy-btn" title="Classifica globale">🏆 classifica</button>
       <button id="btn-changelog" class="buy-btn" style="position:relative;" title="Novità e changelog">📜 novità<span id="changelog-dot" class="hidden" style="position:absolute; top:-4px; right:-4px; width:9px; height:9px; border-radius:50%; background:var(--jade); box-shadow:0 0 6px var(--jade);"></span></button>
       <button id="btn-reset" class="buy-btn" style="color:var(--blood);" title="Cancella salvataggio">↺ reset</button>
     </div>
@@ -755,6 +756,21 @@ footer.credits{
   </div>
 </div>
 
+<div class="modal-bg hidden" id="leaderboard-modal">
+  <div class="modal" style="max-width:480px; text-align:left;">
+    <h2 style="text-align:center;">🏆 Classifica Globale</h2>
+    <label style="display:flex; align-items:flex-start; gap:8px; font-size:11.5px; color:var(--text-muted); background:var(--bg-inset); border:1px solid var(--border-soft); border-radius:6px; padding:9px 10px; cursor:pointer;">
+      <input type="checkbox" id="leaderboard-optin" style="margin-top:2px;">
+      <span>Partecipa alla classifica globale: il tuo nome, classe, livello e numero di rinascite saranno visibili pubblicamente a tutti i giocatori. La foto profilo non viene mai condivisa.</span>
+    </label>
+    <div id="leaderboard-list" style="max-height:45vh; overflow-y:auto; margin-top:12px;"></div>
+    <div style="display:flex; gap:8px; margin-top:14px; justify-content:center;">
+      <button class="buy-btn" id="leaderboard-refresh">↻ aggiorna</button>
+      <button class="close-btn" id="leaderboard-close" style="margin:0;">Chiudi</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
 "use strict";
@@ -768,8 +784,27 @@ footer.credits{
    salvataggio è pensato per fondersi con le partite esistenti,
    quindi non serve mai chiedere ai giocatori di ricominciare.
 ===================================================== */
-const GAME_VERSION = '1.7.1';
+/* =====================================================
+   CLASSIFICA GLOBALE (opzionale)
+   Per attivarla: crea un progetto Firebase gratuito, attiva
+   "Realtime Database" e incolla qui sotto l'URL del database
+   (tipo https://tuo-progetto-default-rtdb.firebaseio.com).
+   Lasciando la stringa vuota la classifica resta disattivata
+   e il gioco funziona normalmente offline.
+===================================================== */
+const FIREBASE_DB_URL = 'https://pietre-corrotte-default-rtdb.firebaseio.com';
+
+const GAME_VERSION = '1.8.1';
 const CHANGELOG = [
+  {version:'1.8.1', date:'7 ago 2026', notes:[
+    'Classifica globale attivata e collegata al database del gioco'
+  ]},
+  {version:'1.8.0', date:'7 ago 2026', notes:[
+    'Nuova Classifica Globale (🏆 in alto): confronta livello, rinascite e nemici uccisi con altri giocatori',
+    'Partecipazione facoltativa: va attivata con una casella di consenso, il nome scelto e i progressi diventano pubblici solo se lo attivi tu',
+    'La foto profilo non viene mai condivisa con la classifica',
+    'Riservato al proprietario del sito: la classifica richiede di collegare un database gratuito (vedi istruzioni nel codice, costante FIREBASE_DB_URL) — finché non è configurata, il gioco funziona come sempre offline'
+  ]},
   {version:'1.7.1', date:'7 ago 2026', notes:[
     'Corretto bug: oro, gemme, livello e barra XP ora si aggiornano in tempo reale durante la caccia, non solo dopo altre azioni',
     'Corretto bug: nome del personaggio e foto profilo non vengono più cancellati dalla rinascita'
@@ -911,6 +946,8 @@ function freshState(){
     classKey:null,
     characterName:'',
     avatarData:null,
+    playerId:null,
+    leaderboardOptIn:false,
     zoneId:'yongan',
     killCount:0,
     inBoss:false,
@@ -933,6 +970,9 @@ function freshState(){
   };
 }
 let S = load() || freshState();
+if(!S.playerId){
+  S.playerId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('p-' + Date.now() + '-' + Math.random().toString(36).slice(2,10));
+}
 let itemUid = 1;
 
 /* =====================================================
@@ -1247,14 +1287,17 @@ function checkTitles(){
 function gainXp(amount){
   S.xp += amount;
   let need = xpToNext(S.level);
+  let leveledUp = false;
   while(S.xp >= need){
     S.xp -= need;
     S.level++;
+    leveledUp = true;
     S.hpMax = totalStat('maxhp');
     S.hp = S.hpMax;
     log(`✨ Sei salito al livello <b>${S.level}</b>!`, 'drop');
     need = xpToNext(S.level);
   }
+  if(leveledUp) submitLeaderboardEntry();
 }
 
 function maybeAutoEquip(item){
@@ -1363,6 +1406,8 @@ function doPrestige(){
   const keepPrestigeCount = (S.prestigeCount||0) + 1;
   const keepCharacterName = S.characterName;
   const keepAvatarData = S.avatarData;
+  const keepPlayerId = S.playerId;
+  const keepLeaderboardOptIn = S.leaderboardOptIn;
   S = freshState();
   S.gems = keepGems;
   S.prestigeUpgrades = keepPrestige;
@@ -1373,12 +1418,15 @@ function doPrestige(){
   S.prestigeCount = keepPrestigeCount;
   S.characterName = keepCharacterName;
   S.avatarData = keepAvatarData;
+  S.playerId = keepPlayerId;
+  S.leaderboardOptIn = keepLeaderboardOptIn;
   S.hpMax = totalStat('maxhp');
   S.hp = S.hpMax;
   spawnMonster();
   log(`🔥 Sei rinato con nuova forza! +${gain} 💎 Gemme di Prestigio.`, 'legend');
   checkTitles();
   renderAll();
+  submitLeaderboardEntry();
 }
 
 /* =====================================================
@@ -1682,6 +1730,81 @@ document.getElementById('btn-changelog').addEventListener('click', openChangelog
 document.getElementById('changelog-close').addEventListener('click', ()=>{
   document.getElementById('changelog-modal').classList.add('hidden');
 });
+
+/* =====================================================
+   CLASSIFICA GLOBALE
+===================================================== */
+function leaderboardEnabled(){ return FIREBASE_DB_URL.trim().length > 0; }
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+async function submitLeaderboardEntry(){
+  if(!leaderboardEnabled() || !S.leaderboardOptIn || !S.classKey) return;
+  try{
+    const payload = {
+      name: (S.characterName || `Eroe ${currentClass().name}`).slice(0,20),
+      classKey: S.classKey,
+      level: Math.max(1, Math.min(1000, Math.floor(S.level))),
+      prestigeCount: Math.max(0, Math.floor(S.prestigeCount||0)),
+      totalKills: Math.max(0, Math.floor(S.totalKills||0)),
+      updatedAt: Date.now()
+    };
+    await fetch(`${FIREBASE_DB_URL}/leaderboard/${S.playerId}.json`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+  }catch(e){
+    // la classifica è un extra online: un errore di rete non deve mai rompere il gioco offline
+  }
+}
+async function loadLeaderboard(){
+  const listEl = document.getElementById('leaderboard-list');
+  if(!leaderboardEnabled()){
+    listEl.innerHTML = '<div class="inv-empty">Classifica non ancora attivata dal proprietario del gioco.</div>';
+    return;
+  }
+  listEl.innerHTML = '<div class="inv-empty">Caricamento…</div>';
+  try{
+    const res = await fetch(`${FIREBASE_DB_URL}/leaderboard.json`);
+    const data = await res.json();
+    if(!data){
+      listEl.innerHTML = '<div class="inv-empty">Ancora nessun punteggio registrato. Sii il primo!</div>';
+      return;
+    }
+    const entries = Object.values(data).sort((a,b)=>
+      (b.level - a.level) || ((b.prestigeCount||0) - (a.prestigeCount||0)) || ((b.totalKills||0) - (a.totalKills||0))
+    ).slice(0, 50);
+    listEl.innerHTML = entries.map((e,i)=>{
+      const cls = CLASSES.find(c=>c.key===e.classKey) || CLASSES[0];
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`;
+      return `<div class="title-row">
+        <div>
+          <div class="t-name">${medal} ${cls.icon} ${escapeHtml(e.name||'???')}</div>
+          <div class="t-desc">Livello ${fmt(e.level||1)} · ${fmt(e.prestigeCount||0)} rinascite · ${fmt(e.totalKills||0)} nemici uccisi</div>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    listEl.innerHTML = '<div class="inv-empty">Impossibile caricare la classifica. Controlla la connessione e riprova.</div>';
+  }
+}
+function openLeaderboard(){
+  document.getElementById('leaderboard-optin').checked = !!S.leaderboardOptIn;
+  document.getElementById('leaderboard-modal').classList.remove('hidden');
+  loadLeaderboard();
+}
+document.getElementById('btn-leaderboard').addEventListener('click', openLeaderboard);
+document.getElementById('leaderboard-close').addEventListener('click', ()=>{
+  document.getElementById('leaderboard-modal').classList.add('hidden');
+});
+document.getElementById('leaderboard-refresh').addEventListener('click', loadLeaderboard);
+document.getElementById('leaderboard-optin').addEventListener('change', (e)=>{
+  S.leaderboardOptIn = e.target.checked;
+  save();
+  if(S.leaderboardOptIn) submitLeaderboardEntry();
+});
+
 function renderClassModal(){
   const grid = document.getElementById('class-grid');
   grid.innerHTML = '';
@@ -1797,8 +1920,12 @@ document.getElementById('prestige-btn').addEventListener('click', ()=>{
 });
 document.getElementById('btn-reset').addEventListener('click', ()=>{
   if(confirm('Cancellare completamente il salvataggio? Questa azione è irreversibile.')){
+    if(leaderboardEnabled() && S.leaderboardOptIn && S.playerId){
+      fetch(`${FIREBASE_DB_URL}/leaderboard/${S.playerId}.json`, {method:'DELETE'}).catch(()=>{});
+    }
     localStorage.removeItem('pietre-corrotte-save');
     S = freshState();
+    S.playerId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('p-' + Date.now() + '-' + Math.random().toString(36).slice(2,10));
     S.lastSeenVersion = GAME_VERSION;
     document.getElementById('changelog-dot').classList.add('hidden');
     S.hpMax = totalStat('maxhp');
