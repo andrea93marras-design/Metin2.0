@@ -740,8 +740,9 @@ footer.credits{
 
 <div class="modal-bg hidden" id="class-modal">
   <div class="modal" style="max-width:640px;">
-    <h2>Scegli la tua classe</h2>
-    <p>Ogni classe di Metin2 ha un proprio stile di combattimento e le proprie armi.</p>
+    <h2>Crea il tuo eroe</h2>
+    <p>Dai un nome al tuo eroe e scegli la classe. Potrai cambiare l'immagine del profilo in qualsiasi momento.</p>
+    <input type="text" id="hero-name-input" maxlength="20" placeholder="Nome del tuo eroe" style="width:100%; margin-top:10px; padding:10px 12px; border-radius:4px; border:1px solid var(--gold-dim); background:var(--bg-inset); color:var(--text); font-family:var(--font-display); font-size:15px; text-align:center;">
     <div id="class-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:10px; margin-top:14px;"></div>
   </div>
 </div>
@@ -767,8 +768,13 @@ footer.credits{
    salvataggio è pensato per fondersi con le partite esistenti,
    quindi non serve mai chiedere ai giocatori di ricominciare.
 ===================================================== */
-const GAME_VERSION = '1.6.0';
+const GAME_VERSION = '1.7.0';
 const CHANGELOG = [
+  {version:'1.7.0', date:'6 ago 2026', notes:[
+    'Nome del personaggio: lo scegli alla creazione e puoi rinominarlo in qualsiasi momento cliccandoci sopra',
+    'Immagine del profilo caricabile dal dispositivo (ridimensionata automaticamente), con anteprima nella scheda Eroe',
+    'Clic destro sull\u2019immagine del profilo per rimuoverla e tornare all\u2019icona della classe'
+  ]},
   {version:'1.6.0', date:'6 ago 2026', notes:[
     'Font calligrafico "Pietre Corrotte" (Ma Shan Zheng) esteso a tutta l\u2019interfaccia',
     'I numeri (oro, statistiche, HP/XP, prezzi) restano in monospazio per rimanere leggibili a colpo d\u2019occhio',
@@ -899,6 +905,8 @@ function freshState(){
     level:1, xp:0, yang:0, gems:0,
     hp:100, hpMax:100,
     classKey:null,
+    characterName:'',
+    avatarData:null,
     zoneId:'yongan',
     killCount:0,
     inBoss:false,
@@ -1388,6 +1396,15 @@ function renderStats(){
   const hpFill = document.getElementById('player-hp-fill');
   hpFill.style.width = Math.max(0,(S.hp/S.hpMax)*100)+'%';
   document.getElementById('player-hp-label').textContent = `${fmt(S.hp)}/${fmt(S.hpMax)}`;
+
+  const avatarCircle = document.getElementById('avatar-circle');
+  avatarCircle.innerHTML = S.avatarData
+    ? `<img src="${S.avatarData}" style="width:100%; height:100%; object-fit:cover;">`
+    : cls.icon;
+  const nameEl = document.getElementById('char-name-display');
+  if(document.activeElement !== nameEl){ // don't clobber while the player is typing
+    nameEl.textContent = S.characterName || `Eroe ${cls.name}`;
+  }
 }
 function renderTitles(){
   const wrap = document.getElementById('title-list');
@@ -1673,6 +1690,9 @@ function renderClassModal(){
   document.getElementById('class-modal').classList.remove('hidden');
 }
 function chooseClass(key){
+  const nameInput = document.getElementById('hero-name-input');
+  const typedName = nameInput ? nameInput.value.trim().slice(0,20) : '';
+  S.characterName = typedName;
   S.classKey = key;
   document.getElementById('class-modal').classList.add('hidden');
   S.hpMax = totalStat('maxhp');
@@ -1684,6 +1704,69 @@ function chooseClass(key){
 document.getElementById('offline-close').addEventListener('click', ()=>{
   document.getElementById('offline-modal').classList.add('hidden');
   renderAll();
+});
+
+/* =====================================================
+   NOME E IMMAGINE DEL PERSONAGGIO
+===================================================== */
+const nameDisplayEl = document.getElementById('char-name-display');
+function commitName(){
+  nameDisplayEl.contentEditable = 'false';
+  let val = nameDisplayEl.textContent.replace(/\s+/g,' ').trim().slice(0,20);
+  S.characterName = val;
+  save();
+  renderStats(); // will restore default placeholder text if empty
+}
+nameDisplayEl.addEventListener('click', ()=>{
+  if(nameDisplayEl.contentEditable === 'true') return;
+  nameDisplayEl.contentEditable = 'true';
+  nameDisplayEl.textContent = S.characterName || '';
+  nameDisplayEl.focus();
+  const range = document.createRange();
+  range.selectNodeContents(nameDisplayEl);
+  const sel = dom_getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+});
+function dom_getSelection(){ return window.getSelection ? window.getSelection() : document.getSelection(); }
+nameDisplayEl.addEventListener('blur', commitName);
+nameDisplayEl.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){ e.preventDefault(); nameDisplayEl.blur(); }
+});
+
+const avatarInput = document.getElementById('avatar-input');
+document.getElementById('avatar-wrap').addEventListener('click', ()=>avatarInput.click());
+document.getElementById('avatar-wrap').addEventListener('contextmenu', (e)=>{
+  e.preventDefault();
+  if(S.avatarData){
+    S.avatarData = null;
+    save();
+    renderStats();
+  }
+});
+avatarInput.addEventListener('change', (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ alert('Scegli un file immagine.'); return; }
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const size = 160; // avatar ridotto per stare comodo nel salvataggio locale
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const scale = Math.max(size/img.width, size/img.height);
+      const w = img.width*scale, h = img.height*scale;
+      ctx.drawImage(img, (size-w)/2, (size-h)/2, w, h);
+      S.avatarData = canvas.toDataURL('image/jpeg', 0.85);
+      save();
+      renderStats();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  avatarInput.value = '';
 });
 document.getElementById('auto-equip').addEventListener('change', (e)=>{
   S.autoEquip = e.target.checked;
