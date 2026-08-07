@@ -768,8 +768,12 @@ footer.credits{
    salvataggio è pensato per fondersi con le partite esistenti,
    quindi non serve mai chiedere ai giocatori di ricominciare.
 ===================================================== */
-const GAME_VERSION = '1.7.0';
+const GAME_VERSION = '1.7.1';
 const CHANGELOG = [
+  {version:'1.7.1', date:'7 ago 2026', notes:[
+    'Corretto bug: oro, gemme, livello e barra XP ora si aggiornano in tempo reale durante la caccia, non solo dopo altre azioni',
+    'Corretto bug: nome del personaggio e foto profilo non vengono più cancellati dalla rinascita'
+  ]},
   {version:'1.7.0', date:'6 ago 2026', notes:[
     'Nome del personaggio: lo scegli alla creazione e puoi rinominarlo in qualsiasi momento cliccandoci sopra',
     'Immagine del profilo caricabile dal dispositivo (ridimensionata automaticamente), con anteprima nella scheda Eroe',
@@ -1189,6 +1193,7 @@ function doAttack(manual){
   }
   renderCombat();
   renderStats();
+  renderTop();
 }
 
 function killMonster(){
@@ -1356,6 +1361,8 @@ function doPrestige(){
   const keepUnlockedTitles = S.unlockedTitles;
   const keepEquippedTitle = S.equippedTitle;
   const keepPrestigeCount = (S.prestigeCount||0) + 1;
+  const keepCharacterName = S.characterName;
+  const keepAvatarData = S.avatarData;
   S = freshState();
   S.gems = keepGems;
   S.prestigeUpgrades = keepPrestige;
@@ -1364,6 +1371,8 @@ function doPrestige(){
   S.unlockedTitles = keepUnlockedTitles;
   S.equippedTitle = keepEquippedTitle;
   S.prestigeCount = keepPrestigeCount;
+  S.characterName = keepCharacterName;
+  S.avatarData = keepAvatarData;
   S.hpMax = totalStat('maxhp');
   S.hp = S.hpMax;
   spawnMonster();
