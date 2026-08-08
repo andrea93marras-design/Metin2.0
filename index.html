@@ -606,6 +606,7 @@ body{padding-bottom:64px;}
 }
 @media (max-width:1050px){.inv-grid{grid-template-columns:repeat(6,1fr);}}
 .inv-item{
+  position:relative;
   background:var(--bg-inset);
   border:1px solid var(--border-soft);
   border-radius:7px;
@@ -616,6 +617,7 @@ body{padding-bottom:64px;}
   transition:border-color .1s ease;
 }
 .inv-item:hover{border-color:var(--jade-dim);}
+.ii-lock{position:absolute; top:2px; left:3px; font-size:9px; filter:drop-shadow(0 1px 1px rgba(0,0,0,0.6));}
 .inv-item .ii-icon{font-size:17px;display:block;margin-bottom:3px;}
 .inv-item .ii-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
 .inv-empty{color:var(--text-faint);font-size:11.5px;font-style:italic;text-align:center;padding:20px 0;grid-column:1/-1;}
@@ -859,8 +861,17 @@ footer.credits{
       <div class="inv-toolbar">
         <label><input type="checkbox" id="auto-equip" checked> auto-equipaggia se migliore</label>
         <span id="inv-count" style="font-family:var(--font-mono);">0/24</span>
-        <button class="buy-btn" id="sell-all-common" style="min-width:auto;">vendi comuni</button>
       </div>
+      <div class="inv-toolbar" style="margin-top:6px; gap:8px;">
+        <select id="sell-rarity-select" style="background:var(--bg-inset); color:var(--text); border:1px solid var(--border-soft); border-radius:5px; padding:6px 8px; font-family:var(--font-body); font-size:11.5px; flex:1;">
+          <option value="comune">Vendi tutti i Comuni</option>
+          <option value="raro">Vendi tutti i Rari</option>
+          <option value="epico">Vendi tutti gli Epici</option>
+          <option value="leggendario">Vendi tutti i Leggendari</option>
+        </select>
+        <button class="buy-btn" id="sell-by-rarity" style="min-width:auto;">Vendi</button>
+      </div>
+      <div class="tooltip-hint">Gli oggetti 🔒 bloccati non vengono mai venduti</div>
       <div class="inv-grid" id="inv-grid"></div>
       <div class="tooltip-hint">Tocca un oggetto per vedere i dettagli</div>
     </div>
@@ -904,6 +915,7 @@ footer.credits{
     <div class="item-detail-body" id="item-detail-body"></div>
     <div class="item-detail-actions">
       <button class="buy-btn" id="item-detail-equip" style="min-width:auto;">Equipaggia</button>
+      <button class="buy-btn" id="item-detail-lock" style="min-width:auto; color:var(--gold);">🔒 Blocca</button>
       <button class="buy-btn" id="item-detail-sell" style="min-width:auto; color:var(--blood);">Vendi</button>
     </div>
     <button class="close-btn" id="item-detail-close" style="display:block; margin:14px auto 0;">Chiudi</button>
@@ -974,8 +986,13 @@ footer.credits{
 ===================================================== */
 const FIREBASE_DB_URL = 'https://pietre-corrotte-default-rtdb.firebaseio.com';
 
-const GAME_VERSION = '1.9.0';
+const GAME_VERSION = '1.9.1';
 const CHANGELOG = [
+  {version:'1.9.1', date:'7 ago 2026', notes:[
+    'Nuovo: blocca un oggetto (🔒 nella sua scheda) per proteggerlo da qualsiasi vendita, anche automatica',
+    'Il vecchio "vendi comuni" è diventato un selettore: ora puoi vendere in blocco Comuni, Rari, Epici o Leggendari',
+    'Gli oggetti bloccati vengono sempre risparmiati, sia dalla vendita in blocco sia dallo smaltimento automatico quando l\u2019inventario è pieno'
+  ]},
   {version:'1.9.0', date:'7 ago 2026', notes:[
     'Fase 1 — restyling completo: interfaccia trasformata in 5 schermate da MMORPG mobile (Home, Personaggio, Inventario, Equip, Zone) con barra di navigazione inferiore',
     'Nuovo valore "Potenza" calcolato dalle statistiche del personaggio, visibile su Personaggio ed Equip',
@@ -1178,6 +1195,7 @@ function normalizeItem(item){
   if(!item) return item;
   if(typeof item.refine !== 'number') item.refine = 0;
   if(item.classKey === undefined) item.classKey = null;
+  if(typeof item.locked !== 'boolean') item.locked = false;
   return item;
 }
 function load(){
@@ -1322,7 +1340,8 @@ function generateItem(){
     statLabel: def.statLabel,
     statValue,
     refine: 0,
-    classKey: slot==='arma' ? currentClass().key : null
+    classKey: slot==='arma' ? currentClass().key : null,
+    locked: false
   };
 }
 function itemEffectiveValue(item){
@@ -1453,13 +1472,16 @@ function killMonster(){
     log(`${RARITIES.find(r=>r.key===item.rarity).icon} Bottino: <b>${itemDisplayName(item)}</b> [${item.rarityLabel}]`, cls);
     if(S.autoEquip) maybeAutoEquip(item);
     if(S.inventory.length > INVENTORY_SIZE){
-      // auto-sell oldest common to keep list manageable
-      const idx = S.inventory.findIndex(i=>i.rarity==='comune');
+      // auto-sell oldest unlocked common to keep list manageable; never touch locked items
+      const idx = S.inventory.findIndex(i=>i.rarity==='comune' && !i.locked);
       if(idx>-1){
         S.yang += sellValue(S.inventory[idx]);
         S.inventory.splice(idx,1);
       } else {
-        S.inventory.shift();
+        const idxAny = S.inventory.findIndex(i=>!i.locked);
+        if(idxAny>-1) S.inventory.splice(idxAny,1);
+        // se è tutto bloccato, l'inventario cresce temporaneamente oltre il limite
+        // piuttosto che eliminare un oggetto che il giocatore ha protetto
       }
     }
     renderInventory();
@@ -1536,6 +1558,7 @@ function equipItem(item, fromAuto){
   renderAll();
 }
 function sellItem(item){
+  if(item.locked) return;
   S.yang += sellValue(item);
   S.inventory = S.inventory.filter(i=>i.uid!==item.uid);
   renderAll();
@@ -1822,10 +1845,10 @@ function renderInventory(){
     const div = document.createElement('div');
     if(item){
       div.className = `inv-item rar-glow-${item.rarity}`;
-      div.innerHTML = `<span class="ii-icon">${SLOT_DEFS[item.slot].icon}</span>
+      div.innerHTML = `${item.locked?'<span class="ii-lock">🔒</span>':''}<span class="ii-icon">${SLOT_DEFS[item.slot].icon}</span>
         <span class="ii-name rar-${item.rarity}">${itemDisplayName(item)}${item.classKey?` ${classIcon(item.classKey)}`:''}</span>
         <span style="color:var(--text-faint)">+${fmt(itemEffectiveValue(item))} ${item.statLabel}</span>`;
-      div.title = `${item.rarityLabel} · tocca per i dettagli`;
+      div.title = `${item.rarityLabel}${item.locked?' · bloccato':''} · tocca per i dettagli`;
       div.onclick = ()=>openItemDetail(item);
     } else {
       div.className = 'inv-item empty';
@@ -1986,7 +2009,7 @@ function openItemDetail(item){
   const equipped = S.equipment[item.slot];
   const isEquipped = equipped && equipped.uid === item.uid;
   body.innerHTML = `
-    <div class="id-name rar-${item.rarity}">${SLOT_DEFS[item.slot].icon} ${itemDisplayName(item)}</div>
+    <div class="id-name rar-${item.rarity}">${item.locked?'🔒 ':''}${SLOT_DEFS[item.slot].icon} ${itemDisplayName(item)}</div>
     <div class="id-rarity rar-${item.rarity}">${item.rarityLabel}${item.classKey?` · solo ${classIcon(item.classKey)}`:''}</div>
     <div class="id-stat-row"><span>${item.statLabel}</span><b>+${fmt(itemEffectiveValue(item))}</b></div>
     <div class="id-stat-row"><span>Affinamento</span><b>+${item.refine||0}</b></div>
@@ -1995,6 +2018,11 @@ function openItemDetail(item){
   const equipBtn = document.getElementById('item-detail-equip');
   equipBtn.textContent = isEquipped ? 'Già equipaggiato' : 'Equipaggia';
   equipBtn.disabled = isEquipped;
+  const lockBtn = document.getElementById('item-detail-lock');
+  lockBtn.textContent = item.locked ? '🔓 Sblocca' : '🔒 Blocca';
+  const sellBtn = document.getElementById('item-detail-sell');
+  sellBtn.disabled = !!item.locked;
+  sellBtn.textContent = item.locked ? '🔒 Bloccato' : 'Vendi';
   document.getElementById('item-detail-modal').classList.remove('hidden');
 }
 document.getElementById('item-detail-equip').addEventListener('click', ()=>{
@@ -2004,9 +2032,18 @@ document.getElementById('item-detail-equip').addEventListener('click', ()=>{
     document.getElementById('item-detail-modal').classList.add('hidden');
   }
 });
-document.getElementById('item-detail-sell').addEventListener('click', ()=>{
+document.getElementById('item-detail-lock').addEventListener('click', ()=>{
   const item = S.inventory.find(i=>i.uid===detailItemUid);
   if(item){
+    item.locked = !item.locked;
+    save();
+    renderInventory();
+    openItemDetail(item); // aggiorna la scheda per riflettere il nuovo stato
+  }
+});
+document.getElementById('item-detail-sell').addEventListener('click', ()=>{
+  const item = S.inventory.find(i=>i.uid===detailItemUid);
+  if(item && !item.locked){
     sellItem(item);
     document.getElementById('item-detail-modal').classList.add('hidden');
   }
@@ -2213,13 +2250,24 @@ avatarInput.addEventListener('change', (e)=>{
 document.getElementById('auto-equip').addEventListener('change', (e)=>{
   S.autoEquip = e.target.checked;
 });
-document.getElementById('sell-all-common').addEventListener('click', ()=>{
-  const commons = S.inventory.filter(i=>i.rarity==='comune');
+document.getElementById('sell-by-rarity').addEventListener('click', ()=>{
+  const rarityKey = document.getElementById('sell-rarity-select').value;
+  const rarityLabel = RARITIES.find(r=>r.key===rarityKey).label;
+  const targets = S.inventory.filter(i=>i.rarity===rarityKey && !i.locked);
+  const lockedCount = S.inventory.filter(i=>i.rarity===rarityKey && i.locked).length;
+  if(targets.length===0){
+    log(lockedCount>0
+      ? `Tutti gli oggetti [${rarityLabel}] sono bloccati 🔒, nessuno è stato venduto.`
+      : `Nessun oggetto [${rarityLabel}] da vendere.`);
+    return;
+  }
   let total = 0;
-  commons.forEach(i=>total+=sellValue(i));
-  S.inventory = S.inventory.filter(i=>i.rarity!=='comune');
+  targets.forEach(i=>total+=sellValue(i));
+  const targetUids = new Set(targets.map(i=>i.uid));
+  S.inventory = S.inventory.filter(i=>!targetUids.has(i.uid));
   S.yang += total;
-  if(total>0) log(`Hai venduto ${commons.length} oggetti comuni per ${fmt(total)} 💰`);
+  log(`Hai venduto ${targets.length} oggetti [${rarityLabel}] per ${fmt(total)} 💰`
+    + (lockedCount>0 ? ` (${lockedCount} bloccati risparmiati 🔒)` : ''));
   renderAll();
 });
 document.getElementById('prestige-btn').addEventListener('click', ()=>{
