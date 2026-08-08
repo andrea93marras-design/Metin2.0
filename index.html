@@ -61,6 +61,7 @@ a{color:var(--jade);}
   margin:0 auto;
   padding:20px 20px 60px;
 }
+body{padding-bottom:64px;}
 
 /* ---------- Header ---------- */
 .topbar{
@@ -151,15 +152,140 @@ a{color:var(--jade);}
 .bar-fill.hp{background:linear-gradient(90deg, var(--blood-dim), var(--blood));}
 .bar-fill.gold{background:linear-gradient(90deg, var(--gold-dim), var(--gold));}
 
-/* ---------- Layout ---------- */
-.layout{
-  display:grid;
-  grid-template-columns:280px minmax(0,1fr) 320px;
-  gap:16px;
-  align-items:start;
+/* ---------- Views & bottom navigation ---------- */
+.view{display:none; max-width:900px; margin:0 auto;}
+.view.active{display:block;}
+.view-grid-2{display:block;}
+@media (min-width:860px){
+  .view-grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;}
 }
-@media (max-width:1050px){
-  .layout{grid-template-columns:1fr;}
+
+.bottom-nav{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  z-index:45;
+  display:flex;
+  background:linear-gradient(180deg, var(--bg-panel-2), var(--bg-void));
+  border-top:2px solid var(--gold-dim);
+  box-shadow:0 -6px 18px rgba(0,0,0,0.45);
+  padding-bottom:env(safe-area-inset-bottom, 0);
+}
+.bottom-nav button{
+  flex:1;
+  background:none;
+  border:none;
+  color:var(--text-faint);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:2px;
+  padding:9px 4px 7px;
+  font-family:var(--font-body);
+  font-size:9.5px;
+  font-weight:600;
+  cursor:pointer;
+  transition:color .15s ease;
+}
+.bottom-nav button .nav-icon{font-size:19px; line-height:1;}
+.bottom-nav button.active{color:var(--gold);}
+.bottom-nav button.active .nav-icon{filter:drop-shadow(0 0 5px rgba(224,178,88,0.6));}
+
+@media (min-width:860px){
+  .bottom-nav{
+    position:static;
+    max-width:900px;
+    margin:0 auto 16px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    box-shadow:none;
+  }
+  .bottom-nav button{flex-direction:row; font-size:12px; padding:10px; gap:6px;}
+  body{padding-bottom:0 !important;}
+}
+
+/* ---------- Zone cards (Zone view) ---------- */
+.zone-card{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:var(--bg-inset);
+  border:1px solid var(--border-soft);
+  border-left:4px solid var(--jade-dim);
+  border-radius:8px;
+  padding:12px 14px;
+  margin-bottom:10px;
+  cursor:pointer;
+  transition:border-color .15s ease, transform .1s ease;
+}
+.zone-card:hover{border-left-color:var(--jade); transform:translateX(2px);}
+.zone-card.active{border-left-color:var(--gold); background:linear-gradient(90deg, rgba(224,178,88,0.08), transparent);}
+.zone-card.locked{opacity:0.5; cursor:not-allowed;}
+.zone-card .zc-icon{font-size:26px; flex:0 0 auto;}
+.zone-card .zc-name{font-weight:700; font-size:13.5px;}
+.zone-card .zc-meta{font-size:11px; color:var(--text-muted); margin-top:2px;}
+.zone-card .zc-badge{
+  margin-left:auto; flex:0 0 auto;
+  font-family:var(--font-mono); font-size:10.5px;
+  padding:4px 8px; border-radius:5px;
+  background:var(--bg-panel-2); color:var(--gold); border:1px solid var(--gold-dim);
+}
+
+/* ---------- Home quick header ---------- */
+.home-zone-strip{
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--bg-inset); border:1px solid var(--border-soft); border-radius:8px;
+  padding:9px 12px; margin-bottom:12px; font-size:12px; color:var(--text-muted);
+}
+.home-zone-strip b{color:var(--gold); font-family:var(--font-display);}
+.home-zone-strip button{
+  background:none; border:1px solid var(--gold-dim); color:var(--gold);
+  border-radius:5px; padding:5px 9px; font-size:10.5px; cursor:pointer; font-family:var(--font-body);
+}
+
+/* ---------- Paperdoll (Equipment view) ---------- */
+.paperdoll-head{
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  margin-bottom:16px;
+}
+.paperdoll-avatar{
+  width:84px; height:84px; border-radius:50%;
+  border:3px solid var(--gold-dim); background:var(--bg-inset);
+  display:flex; align-items:center; justify-content:center; font-size:38px; overflow:hidden;
+  box-shadow:0 0 22px rgba(224,178,88,0.18);
+}
+.paperdoll-avatar img{width:100%; height:100%; object-fit:cover;}
+.power-badge{
+  display:inline-flex; align-items:center; gap:6px;
+  background:linear-gradient(180deg, rgba(224,178,88,0.14), transparent);
+  border:1px solid var(--gold-dim); border-radius:999px;
+  padding:5px 14px; font-family:var(--font-mono); font-size:12.5px; color:var(--gold);
+}
+
+/* ---------- Item detail modal ---------- */
+.item-detail-body{text-align:left; margin:12px 0;}
+.item-detail-body .id-name{font-family:var(--font-display); font-size:16px; margin-bottom:4px;}
+.item-detail-body .id-rarity{font-size:11px; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:10px;}
+.item-detail-body .id-stat-row{display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-muted); padding:4px 0; border-bottom:1px dashed var(--border-soft);}
+.item-detail-body .id-stat-row b{color:var(--text);}
+.item-detail-actions{display:flex; gap:8px; margin-top:14px;}
+.item-detail-actions button{flex:1;}
+
+/* ---------- Toast feedback ---------- */
+#toast-layer{position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:60; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none;}
+.toast{
+  background:linear-gradient(180deg, var(--bg-panel-2), var(--bg-void));
+  border:1px solid var(--gold-dim); border-radius:8px;
+  padding:9px 16px; font-family:var(--font-display); font-size:13px; color:var(--gold);
+  box-shadow:0 6px 16px rgba(0,0,0,0.45);
+  animation:toastPop 2.2s ease forwards;
+  white-space:nowrap;
+}
+.toast.levelup{border-color:var(--jade); color:var(--text); font-size:15px; background:linear-gradient(180deg, var(--jade-dim), var(--bg-void));}
+@keyframes toastPop{
+  0%{opacity:0; transform:translateY(-8px) scale(0.96);}
+  10%{opacity:1; transform:translateY(0) scale(1);}
+  82%{opacity:1;}
+  100%{opacity:0; transform:translateY(-6px) scale(0.98);}
 }
 
 .panel{
@@ -382,6 +508,17 @@ a{color:var(--jade);}
 @keyframes floatUp{
   0%{opacity:1;transform:translateY(0);}
   100%{opacity:0;transform:translateY(-40px);}
+}
+.floatnum.crit{
+  color:var(--blood);
+  font-size:19px;
+  text-shadow:0 0 8px rgba(224,152,63,0.7);
+  animation:floatUpCrit .82s ease forwards;
+}
+@keyframes floatUpCrit{
+  0%{opacity:1;transform:translateY(0) scale(1.3);}
+  15%{transform:translateY(-4px) scale(1);}
+  100%{opacity:0;transform:translateY(-46px) scale(1);}
 }
 
 /* HP / danger */
@@ -636,86 +773,74 @@ footer.credits{
     <div class="bar"><div id="xp-fill" class="bar-fill" style="width:0%"></div></div>
   </div>
 
-  <div class="layout">
+  <div id="toast-layer"></div>
 
-    <!-- LEFT: Character -->
-    <div>
-      <div class="panel">
-        <div class="panel-title">Eroe<span class="line"></span></div>
-        <div style="display:flex; align-items:center; gap:12px; margin:-2px 0 14px;">
-          <div id="avatar-wrap" style="position:relative; width:60px; height:60px; flex:0 0 auto; cursor:pointer;" title="Clicca per cambiare immagine · click destro per rimuoverla">
-            <div id="avatar-circle" style="width:60px; height:60px; border-radius:50%; border:3px solid var(--gold-dim); background:var(--bg-inset); display:flex; align-items:center; justify-content:center; font-size:26px; overflow:hidden;">🛡️</div>
-            <div style="position:absolute; bottom:-2px; right:-2px; background:var(--gold); color:#241a08; border-radius:50%; width:19px; height:19px; display:flex; align-items:center; justify-content:center; font-size:10px; border:2px solid var(--bg-panel);">✎</div>
-          </div>
-          <div style="flex:1; min-width:0;">
-            <div id="char-name-display" style="font-family:var(--font-display); font-size:17px; color:var(--gold); cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="Clicca per rinominare">Eroe</div>
-            <div id="class-badge" style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted); margin-top:2px;">—</div>
-          </div>
-        </div>
-        <input type="file" id="avatar-input" accept="image/*" class="hidden">
-        <div class="char-stats">
-          <div class="stat-row"><span>Attacco</span><b id="stat-atk">0</b></div>
-          <div class="stat-row"><span>Difesa</span><b id="stat-def">0</b></div>
-          <div class="stat-row"><span>Vita massima</span><b id="stat-maxhp">0</b></div>
-          <div class="stat-row"><span>Bottino</span><b id="stat-drop">0%</b></div>
-          <div class="stat-row"><span>Fortuna oro</span><b id="stat-gold">0%</b></div>
-          <div class="stat-row"><span>Vel. attacco</span><b id="stat-speed">0.0/s</b></div>
-        </div>
-        <div class="panel-title" style="margin-top:6px;">Equipaggiamento<span class="line"></span></div>
-        <div class="gear-grid" id="gear-grid"></div>
-        <div class="tooltip-hint">Clicca un oggetto in Inventario per equipaggiarlo</div>
-      </div>
+  <!-- ============ VIEW: HOME / CACCIA ============ -->
+  <div class="view active" id="view-home">
+    <div class="home-zone-strip">
+      <span>🗺️ Zona: <b id="home-zone-name">—</b></span>
+      <button id="home-change-zone">Cambia zona</button>
+    </div>
 
-      <div class="panel">
-        <div class="panel-title">Titoli<span class="line"></span></div>
-        <div id="title-list"></div>
+    <div class="player-hp-row">
+      <span>❤ HP</span>
+      <div class="bar"><div id="player-hp-fill" class="bar-fill hp" style="width:100%"></div></div>
+      <span id="player-hp-label">0/0</span>
+    </div>
+
+    <div class="combat-stage">
+      <div class="zone-name" id="stage-zone">—</div>
+      <div class="monster-glyph" id="monster-glyph">👹</div>
+      <div class="monster-name" id="monster-name">—</div>
+      <div class="monster-hp-label" id="monster-hp-label">0 / 0</div>
+      <div class="monster-hpbar"><div id="monster-hp-fill" class="monster-hpbar-fill" style="width:100%"></div></div>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button class="attack-btn" id="attack-btn">⚔ Colpisci</button>
+        <button class="attack-btn" id="hunt-toggle" style="background:linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%); color:#241a08;">▶ Avvia caccia</button>
       </div>
     </div>
 
-    <!-- CENTER: Combat -->
-    <div>
-      <div class="panel">
-        <div class="panel-title">Zone di caccia<span class="line"></span></div>
-        <div class="zone-tabs" id="zone-tabs"></div>
+    <div class="panel">
+      <div class="panel-title">Registro di caccia<span class="line"></span></div>
+      <div class="log-scroll" id="log-scroll"></div>
+    </div>
+  </div>
 
-        <div class="player-hp-row">
-          <span>❤ HP</span>
-          <div class="bar"><div id="player-hp-fill" class="bar-fill hp" style="width:100%"></div></div>
-          <span id="player-hp-label">0/0</span>
+  <!-- ============ VIEW: PERSONAGGIO ============ -->
+  <div class="view" id="view-character">
+    <div class="panel">
+      <div class="panel-title">Eroe<span class="line"></span></div>
+      <div style="display:flex; align-items:center; gap:12px; margin:-2px 0 12px;">
+        <div id="avatar-wrap" style="position:relative; width:60px; height:60px; flex:0 0 auto; cursor:pointer;" title="Clicca per cambiare immagine · click destro per rimuoverla">
+          <div id="avatar-circle" style="width:60px; height:60px; border-radius:50%; border:3px solid var(--gold-dim); background:var(--bg-inset); display:flex; align-items:center; justify-content:center; font-size:26px; overflow:hidden;">🛡️</div>
+          <div style="position:absolute; bottom:-2px; right:-2px; background:var(--gold); color:#241a08; border-radius:50%; width:19px; height:19px; display:flex; align-items:center; justify-content:center; font-size:10px; border:2px solid var(--bg-panel);">✎</div>
         </div>
-
-        <div class="combat-stage">
-          <div class="zone-name" id="stage-zone">—</div>
-          <div class="monster-glyph" id="monster-glyph">👹</div>
-          <div class="monster-name" id="monster-name">—</div>
-          <div class="monster-hp-label" id="monster-hp-label">0 / 0</div>
-          <div class="monster-hpbar"><div id="monster-hp-fill" class="monster-hpbar-fill" style="width:100%"></div></div>
-          <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-            <button class="attack-btn" id="attack-btn">⚔ Colpisci</button>
-            <button class="attack-btn" id="hunt-toggle" style="background:linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%); color:#241a08;">▶ Avvia caccia</button>
-          </div>
+        <div style="flex:1; min-width:0;">
+          <div id="char-name-display" style="font-family:var(--font-display); font-size:17px; color:var(--gold); cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="Clicca per rinominare">Eroe</div>
+          <div id="class-badge" style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted); margin-top:2px;">—</div>
         </div>
-
-        <div class="panel-title">Registro di caccia<span class="line"></span></div>
-        <div class="log-scroll" id="log-scroll"></div>
+        <div class="power-badge">⚔️ <span id="power-score">0</span></div>
+      </div>
+      <input type="file" id="avatar-input" accept="image/*" class="hidden">
+      <div class="char-stats">
+        <div class="stat-row"><span>Attacco</span><b id="stat-atk">0</b></div>
+        <div class="stat-row"><span>Difesa</span><b id="stat-def">0</b></div>
+        <div class="stat-row"><span>Vita massima</span><b id="stat-maxhp">0</b></div>
+        <div class="stat-row"><span>Bottino</span><b id="stat-drop">0%</b></div>
+        <div class="stat-row"><span>Fortuna oro</span><b id="stat-gold">0%</b></div>
+        <div class="stat-row"><span>Vel. attacco</span><b id="stat-speed">0.0/s</b></div>
       </div>
     </div>
 
-    <!-- RIGHT: Upgrades / Inventory / Prestige -->
-    <div>
+    <div class="panel">
+      <div class="panel-title">Titoli<span class="line"></span></div>
+      <div id="title-list"></div>
+    </div>
+
+    <div class="view-grid-2">
       <div class="panel">
         <div class="panel-title">Potenziamenti<span class="line"></span></div>
         <div id="upgrade-list"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Inventario<span class="line"></span></div>
-        <div class="inv-toolbar">
-          <label><input type="checkbox" id="auto-equip" checked> auto-equipaggia se migliore</label>
-          <span id="inv-count" style="font-family:var(--font-mono);">0/24</span>
-          <button class="buy-btn" id="sell-all-common" style="min-width:auto;">vendi comuni</button>
-        </div>
-        <div class="inv-grid" id="inv-grid"></div>
       </div>
 
       <div class="panel">
@@ -725,11 +850,66 @@ footer.credits{
         <button class="prestige-btn" id="prestige-btn" disabled>Rinasci (0 💎)</button>
       </div>
     </div>
+  </div>
 
+  <!-- ============ VIEW: INVENTARIO ============ -->
+  <div class="view" id="view-inventory">
+    <div class="panel">
+      <div class="panel-title">Inventario<span class="line"></span></div>
+      <div class="inv-toolbar">
+        <label><input type="checkbox" id="auto-equip" checked> auto-equipaggia se migliore</label>
+        <span id="inv-count" style="font-family:var(--font-mono);">0/24</span>
+        <button class="buy-btn" id="sell-all-common" style="min-width:auto;">vendi comuni</button>
+      </div>
+      <div class="inv-grid" id="inv-grid"></div>
+      <div class="tooltip-hint">Tocca un oggetto per vedere i dettagli</div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: EQUIPAGGIAMENTO ============ -->
+  <div class="view" id="view-equipment">
+    <div class="panel">
+      <div class="paperdoll-head">
+        <div class="paperdoll-avatar" id="paperdoll-avatar">🛡️</div>
+        <div id="paperdoll-name" style="font-family:var(--font-display); font-size:16px; color:var(--gold);">Eroe</div>
+        <div class="power-badge">⚔️ Potenza <span id="power-score-2">0</span></div>
+      </div>
+      <div class="panel-title">Equipaggiamento<span class="line"></span></div>
+      <div class="gear-grid" id="gear-grid"></div>
+      <div class="tooltip-hint">Tocca un oggetto in Inventario per equipaggiarlo</div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: ZONE ============ -->
+  <div class="view" id="view-zones">
+    <div class="panel">
+      <div class="panel-title">Zone di caccia<span class="line"></span></div>
+      <div id="zone-tabs"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav" id="bottom-nav">
+    <button class="nav-btn active" data-view="home"><span class="nav-icon">🏠</span>Home</button>
+    <button class="nav-btn" data-view="character"><span class="nav-icon">👤</span>Personaggio</button>
+    <button class="nav-btn" data-view="inventory"><span class="nav-icon">🎒</span>Inventario</button>
+    <button class="nav-btn" data-view="equipment"><span class="nav-icon">⚔️</span>Equip</button>
+    <button class="nav-btn" data-view="zones"><span class="nav-icon">🗺️</span>Zone</button>
   </div>
 
   <footer class="credits">Salvataggio automatico nel browser · ispirato all'atmosfera dei MMORPG oldschool coreani</footer>
 </div>
+
+<div class="modal-bg hidden" id="item-detail-modal">
+  <div class="modal" style="max-width:340px;">
+    <div class="item-detail-body" id="item-detail-body"></div>
+    <div class="item-detail-actions">
+      <button class="buy-btn" id="item-detail-equip" style="min-width:auto;">Equipaggia</button>
+      <button class="buy-btn" id="item-detail-sell" style="min-width:auto; color:var(--blood);">Vendi</button>
+    </div>
+    <button class="close-btn" id="item-detail-close" style="display:block; margin:14px auto 0;">Chiudi</button>
+  </div>
+</div>
+
 
 <div class="modal-bg hidden" id="offline-modal">
   <div class="modal">
@@ -794,8 +974,20 @@ footer.credits{
 ===================================================== */
 const FIREBASE_DB_URL = 'https://pietre-corrotte-default-rtdb.firebaseio.com';
 
-const GAME_VERSION = '1.8.1';
+const GAME_VERSION = '1.9.0';
 const CHANGELOG = [
+  {version:'1.9.0', date:'7 ago 2026', notes:[
+    'Fase 1 — restyling completo: interfaccia trasformata in 5 schermate da MMORPG mobile (Home, Personaggio, Inventario, Equip, Zone) con barra di navigazione inferiore',
+    'Nuovo valore "Potenza" calcolato dalle statistiche del personaggio, visibile su Personaggio ed Equip',
+    'Inventario con scheda oggetto dedicata al tocco (statistiche, affinamento, valore) invece di equipaggiare/vendere al volo',
+    'Schermata Equip con avatar in evidenza e feedback numerico quando una statistica cambia (es. Attacco 12 → 20 ↑)',
+    'Zone di caccia trasformate in un elenco verticale di schede con mostri e livello richiesto, zone bloccate chiaramente distinguibili',
+    'Aggiunto un piccolo colpo critico (15% di possibilità, danno maggiorato) con effetto visivo dedicato',
+    'Notifica "LIVELLO SUPERIORE" non bloccante ad ogni salita di livello',
+    'Ottimizzazione prestazioni: durante la caccia si aggiornano solo combattimento/statistiche ad ogni colpo; inventario, zone, titoli e potenziamenti si aggiornano solo quando cambia davvero qualcosa',
+    'Rimosso codice CSS del vecchio layout a tre colonne, non più utilizzato',
+    'Classifica globale invariata: stessa logica, stesso pulsante, nessuna duplicazione'
+  ]},
   {version:'1.8.1', date:'7 ago 2026', notes:[
     'Classifica globale attivata e collegata al database del gioco'
   ]},
@@ -1204,10 +1396,11 @@ function doAttack(manual){
   if(!S.monster) spawnMonster();
   const atk = totalStat('atk');
   const variance = 0.85 + Math.random()*0.3;
-  const dmg = Math.max(1, Math.round(atk*variance));
+  const isCrit = Math.random() < 0.15; // 15% possibilità di colpo critico
+  const dmg = Math.max(1, Math.round(atk*variance*(isCrit?1.7:1)));
   S.monster.hp -= dmg;
 
-  if(manual) showFloatingNumber(dmg);
+  if(manual) showFloatingNumber(dmg, isCrit);
   pulseGlyph();
 
   // small retaliation chance, mitigated by Defense
@@ -1231,6 +1424,9 @@ function doAttack(manual){
   if(S.monster.hp <= 0){
     killMonster();
   }
+  // aggiornamenti leggeri ad ogni colpo (performance): le liste pesanti (inventario,
+  // equip, titoli, zone, potenziamenti) si aggiornano solo quando cambia davvero
+  // qualcosa, dentro killMonster()/checkTitles()/gainXp(), non ad ogni tick.
   renderCombat();
   renderStats();
   renderTop();
@@ -1266,6 +1462,8 @@ function killMonster(){
         S.inventory.shift();
       }
     }
+    renderInventory();
+    renderGear();
   }
 
   // small chance monster retaliates before dying (danger sim)
@@ -1280,6 +1478,7 @@ function checkTitles(){
       S.unlockedTitles.push(t.key);
       log(`🏅 Nuovo titolo sbloccato: <b>${t.name}</b>!`, 'legend');
       if(!S.equippedTitle) S.equippedTitle = t.key; // auto-equip the first one for feedback
+      renderTitles();
     }
   });
 }
@@ -1297,7 +1496,12 @@ function gainXp(amount){
     log(`✨ Sei salito al livello <b>${S.level}</b>!`, 'drop');
     need = xpToNext(S.level);
   }
-  if(leveledUp) submitLeaderboardEntry();
+  if(leveledUp){
+    showToast(`✨ LIVELLO ${S.level}! ✨`, 'levelup');
+    renderZoneTabs();
+    renderPrestige();
+    submitLeaderboardEntry();
+  }
 }
 
 function maybeAutoEquip(item){
@@ -1313,6 +1517,8 @@ function equipItem(item, fromAuto){
     if(!fromAuto) log(`Solo un ${classIcon(item.classKey)} può usare <b>${item.name}</b>.`, 'danger');
     return;
   }
+  const statKey = item.statType;
+  const before = fromAuto ? null : totalStat(statKey);
   const old = S.equipment[item.slot];
   S.equipment[item.slot] = item;
   // remove from inventory (item might or might not be in inventory depending on path)
@@ -1321,7 +1527,12 @@ function equipItem(item, fromAuto){
     if(!fromAuto) S.inventory.push(old);
   }
   S.hpMax = totalStat('maxhp');
-  if(!fromAuto) log(`Hai equipaggiato <b>${itemDisplayName(item)}</b>.`);
+  if(!fromAuto){
+    log(`Hai equipaggiato <b>${itemDisplayName(item)}</b>.`);
+    const after = totalStat(statKey);
+    const label = {atk:'ATTACCO', def:'DIFESA', maxhp:'VITA MASSIMA', drop:'BOTTINO'}[statKey] || statKey.toUpperCase();
+    if(after !== before) showToast(`${label}  ${fmt(before)} → ${fmt(after)} ${after>before?'↑':'↓'}`);
+  }
   renderAll();
 }
 function sellItem(item){
@@ -1343,15 +1554,15 @@ function unequipItem(slot){
   renderAll();
 }
 
-function showFloatingNumber(dmg){
+function showFloatingNumber(dmg, isCrit){
   const stage = document.querySelector('.combat-stage');
   const el = document.createElement('div');
-  el.className='floatnum';
-  el.textContent = '-'+fmt(dmg);
+  el.className = isCrit ? 'floatnum crit' : 'floatnum';
+  el.textContent = (isCrit ? 'CRIT! -' : '-') + fmt(dmg);
   el.style.left = (40+Math.random()*40)+'%';
   el.style.top = '50%';
   stage.appendChild(el);
-  setTimeout(()=>el.remove(), 720);
+  setTimeout(()=>el.remove(), isCrit ? 820 : 720);
 }
 function pulseGlyph(){
   const g = document.getElementById('monster-glyph');
@@ -1440,6 +1651,18 @@ function renderTop(){
   document.getElementById('xp-label').textContent = `${fmt(S.xp)} / ${fmt(need)} XP`;
   document.getElementById('xp-fill').style.width = Math.min(100,(S.xp/need)*100)+'%';
 }
+function calculatePower(){
+  // Punteggio "Potenza" puramente informativo: combina le statistiche esistenti
+  // in un unico numero, senza introdurre nessuna nuova logica di gioco.
+  return Math.round(
+    totalStat('atk')*4 +
+    totalStat('def')*3 +
+    totalStat('maxhp')*0.4 +
+    totalStat('drop')*3 +
+    (goldMultiplier()-1)*100*1.5 +
+    (1/totalStat('speed'))*18
+  );
+}
 function renderStats(){
   const cls = currentClass();
   document.getElementById('class-badge').textContent = `${cls.icon} ${cls.name}`;
@@ -1454,14 +1677,25 @@ function renderStats(){
   hpFill.style.width = Math.max(0,(S.hp/S.hpMax)*100)+'%';
   document.getElementById('player-hp-label').textContent = `${fmt(S.hp)}/${fmt(S.hpMax)}`;
 
-  const avatarCircle = document.getElementById('avatar-circle');
-  avatarCircle.innerHTML = S.avatarData
+  const avatarHtml = S.avatarData
     ? `<img src="${S.avatarData}" style="width:100%; height:100%; object-fit:cover;">`
     : cls.icon;
+  document.getElementById('avatar-circle').innerHTML = avatarHtml;
   const nameEl = document.getElementById('char-name-display');
   if(document.activeElement !== nameEl){ // don't clobber while the player is typing
     nameEl.textContent = S.characterName || `Eroe ${cls.name}`;
   }
+
+  // Specchio nella schermata Equipaggiamento (paperdoll)
+  const power = calculatePower();
+  const pdAvatar = document.getElementById('paperdoll-avatar');
+  if(pdAvatar) pdAvatar.innerHTML = avatarHtml;
+  const pdName = document.getElementById('paperdoll-name');
+  if(pdName) pdName.textContent = nameEl.textContent;
+  const p1 = document.getElementById('power-score');
+  const p2 = document.getElementById('power-score-2');
+  if(p1) p1.textContent = fmt(power);
+  if(p2) p2.textContent = fmt(power);
 }
 function renderTitles(){
   const wrap = document.getElementById('title-list');
@@ -1520,23 +1754,37 @@ function renderZoneTabs(){
   wrap.innerHTML = '';
   ZONES.forEach(z=>{
     const locked = S.level < z.reqLevel;
-    const btn = document.createElement('div');
-    btn.className = 'zone-tab' + (z.id===S.zoneId?' active':'') + (locked?' locked':'');
-    btn.textContent = locked ? `🔒 ${z.name} (Lv.${z.reqLevel})` : z.name;
+    const active = z.id===S.zoneId;
+    const card = document.createElement('div');
+    card.className = 'zone-card' + (active?' active':'') + (locked?' locked':'');
+    const monsterNames = (MONSTER_NAMES[z.id]||[]).join(' · ');
+    card.innerHTML = `
+      <div class="zc-icon">${locked ? '🔒' : z.boss}</div>
+      <div>
+        <div class="zc-name">${z.name}</div>
+        <div class="zc-meta">${locked ? `Richiede livello ${z.reqLevel}` : monsterNames}</div>
+      </div>
+      <div class="zc-badge">${active ? 'IN CORSO' : (locked ? `Lv.${z.reqLevel}` : 'Entra')}</div>
+    `;
     if(!locked){
-      btn.onclick = ()=>{
-        if(S.zoneId===z.id) return;
-        S.zoneId = z.id;
-        S.killCount = 0;
-        spawnMonster();
-        renderAll();
+      card.onclick = ()=>{
+        if(S.zoneId!==z.id){
+          S.zoneId = z.id;
+          S.killCount = 0;
+          spawnMonster();
+          renderAll();
+        }
+        showView('home');
       };
     }
-    wrap.appendChild(btn);
+    wrap.appendChild(card);
   });
 }
 function renderCombat(){
-  document.getElementById('stage-zone').textContent = currentZone().name;
+  const zoneName = currentZone().name;
+  document.getElementById('stage-zone').textContent = zoneName;
+  const homeZoneName = document.getElementById('home-zone-name');
+  if(homeZoneName) homeZoneName.textContent = zoneName;
   const m = S.monster;
   if(!m) return;
   const nameEl = document.getElementById('monster-name');
@@ -1577,9 +1825,8 @@ function renderInventory(){
       div.innerHTML = `<span class="ii-icon">${SLOT_DEFS[item.slot].icon}</span>
         <span class="ii-name rar-${item.rarity}">${itemDisplayName(item)}${item.classKey?` ${classIcon(item.classKey)}`:''}</span>
         <span style="color:var(--text-faint)">+${fmt(itemEffectiveValue(item))} ${item.statLabel}</span>`;
-      div.title = `${item.rarityLabel} · Clic sinistro: equipaggia · Clic destro: vendi (${sellValue(item)} 💰)`;
-      div.onclick = ()=>equipItem(item,false);
-      div.oncontextmenu = (e)=>{ e.preventDefault(); sellItem(item); };
+      div.title = `${item.rarityLabel} · tocca per i dettagli`;
+      div.onclick = ()=>openItemDetail(item);
     } else {
       div.className = 'inv-item empty';
       div.textContent = '·';
@@ -1705,6 +1952,69 @@ function applyOfflineProgress(){
 /* =====================================================
    EVENTS
 ===================================================== */
+/* =====================================================
+   NAVIGAZIONE A SCHERMATE (Home / Personaggio / Inventario / Equip / Zone)
+===================================================== */
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id === 'view-'+name));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.view === name));
+}
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>showView(btn.dataset.view));
+});
+document.getElementById('home-change-zone').addEventListener('click', ()=>showView('zones'));
+
+/* =====================================================
+   FEEDBACK: toast (level up, cambio statistiche)
+===================================================== */
+function showToast(text, cls){
+  const layer = document.getElementById('toast-layer');
+  const el = document.createElement('div');
+  el.className = 'toast' + (cls?' '+cls:'');
+  el.textContent = text;
+  layer.appendChild(el);
+  setTimeout(()=>el.remove(), 2200);
+}
+
+/* =====================================================
+   SCHEDA OGGETTO (Inventario → tocca un oggetto)
+===================================================== */
+let detailItemUid = null;
+function openItemDetail(item){
+  detailItemUid = item.uid;
+  const body = document.getElementById('item-detail-body');
+  const equipped = S.equipment[item.slot];
+  const isEquipped = equipped && equipped.uid === item.uid;
+  body.innerHTML = `
+    <div class="id-name rar-${item.rarity}">${SLOT_DEFS[item.slot].icon} ${itemDisplayName(item)}</div>
+    <div class="id-rarity rar-${item.rarity}">${item.rarityLabel}${item.classKey?` · solo ${classIcon(item.classKey)}`:''}</div>
+    <div class="id-stat-row"><span>${item.statLabel}</span><b>+${fmt(itemEffectiveValue(item))}</b></div>
+    <div class="id-stat-row"><span>Affinamento</span><b>+${item.refine||0}</b></div>
+    <div class="id-stat-row"><span>Valore di vendita</span><b>${fmt(sellValue(item))} 💰</b></div>
+  `;
+  const equipBtn = document.getElementById('item-detail-equip');
+  equipBtn.textContent = isEquipped ? 'Già equipaggiato' : 'Equipaggia';
+  equipBtn.disabled = isEquipped;
+  document.getElementById('item-detail-modal').classList.remove('hidden');
+}
+document.getElementById('item-detail-equip').addEventListener('click', ()=>{
+  const item = S.inventory.find(i=>i.uid===detailItemUid);
+  if(item){
+    equipItem(item, false);
+    document.getElementById('item-detail-modal').classList.add('hidden');
+  }
+});
+document.getElementById('item-detail-sell').addEventListener('click', ()=>{
+  const item = S.inventory.find(i=>i.uid===detailItemUid);
+  if(item){
+    sellItem(item);
+    document.getElementById('item-detail-modal').classList.add('hidden');
+  }
+});
+document.getElementById('item-detail-close').addEventListener('click', ()=>{
+  document.getElementById('item-detail-modal').classList.add('hidden');
+});
+
 document.getElementById('attack-btn').addEventListener('click', ()=>doAttack(true));
 document.getElementById('hunt-toggle').addEventListener('click', ()=>setAutoHunting(!S.autoHunting));
 
