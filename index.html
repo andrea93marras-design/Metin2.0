@@ -1068,8 +1068,21 @@ footer.credits{
 ===================================================== */
 const FIREBASE_DB_URL = 'https://pietre-corrotte-default-rtdb.firebaseio.com';
 
-const GAME_VERSION = '0.3.1';
+const GAME_VERSION = '0.3.3';
 const CHANGELOG = [
+  {version:'0.3.3', date:'7 ago 2026', categories:{
+    bilanciamento: [
+      'Aggiunto un tetto di sicurezza al danno per singolo colpo dei mostri: mai oltre il 12% (mostri normali), 16% (mini-boss) o 20% (boss) degli HP massimi del giocatore in un colpo solo, indipendentemente dai numeri grezzi',
+      'Motivo: i giocatori già avanzati con salvataggi esistenti (livello alto, ma poca Difesa investita) potevano subire fino al 28% degli HP massimi in un solo colpo dopo l\u2019introduzione del combattimento bidirezionale — un rischio che prima non esisteva e per cui non avevano potuto prepararsi. Ora servono almeno 8-9 colpi consecutivi per essere sconfitti da HP pieni, qualunque sia il livello o l\u2019equipaggiamento',
+      'Nessun oggetto o salvataggio esistente viene toccato: la correzione riguarda solo la formula di danno subito, non le statistiche già possedute'
+    ]
+  }},
+  {version:'0.3.2', date:'7 ago 2026', categories:{
+    bilanciamento: [
+      'Corretto: la statistica "Bottino%" degli accessori cresceva con la stessa formula illimitata di Attacco/Difesa/HP — un solo amuleto leggendario di alto livello poteva superare da solo il 24% di possibilità di bottino, rendendo la rarità quasi irrilevante. Ora dipende soprattutto dalla rarità dell\u2019oggetto, entro un intervallo fisso (~3% Comune \u2192 ~10% Leggendario)',
+      'Verificato: lo stesso amuleto che prima dava +24,3% ora ne dà +9,9%, in linea con le altre rarità'
+    ]
+  }},
   {version:'0.3.1', date:'7 ago 2026', categories:{
     bilanciamento: [
       'Corretto: l\u2019Attacco dei mostri normali non cresceva mai col livello del giocatore (solo con la zona), mentre Difesa/HP del giocatore continuavano a salire — il danno subito diventava trascurabile molto in fretta. Ora l\u2019Attacco dei mostri cresce gradualmente anche col livello',
@@ -1728,12 +1741,20 @@ function generateItem(){
   const name = names[Math.floor(Math.random()*names.length)];
   const def = SLOT_DEFS[slot];
   const levelScale = 1 + (S.level-1)*0.12 + zoneIdx*1.4;
-  let baseVal;
-  if(def.stat==='atk') baseVal = 3;
-  else if(def.stat==='def') baseVal = 2;
-  else if(def.stat==='hp') baseVal = 12;
-  else baseVal = 1.2; // drop%
-  const statValue = Math.max(1, Math.round(baseVal * levelScale * rarity.mult * (0.9+Math.random()*0.25) * 10)/10);
+  let statValue;
+  if(def.stat==='drop'){
+    // BILANCIAMENTO: "bottino%" è una percentuale con un tetto naturale (100%), non un valore
+    // illimitato come Attacco/Difesa/HP. Farla crescere con la stessa formula di livello/zona
+    // permetteva a un solo accessorio di alto livello di superare da solo il 20-25% di bottino,
+    // rendendo la rarità quasi irrilevante. Ora dipende soprattutto dalla rarità, entro un range fisso.
+    statValue = Math.max(1, Math.round((2 + rarity.mult*1.7) * (0.9+Math.random()*0.25) * 10)/10);
+  } else {
+    let baseVal;
+    if(def.stat==='atk') baseVal = 3;
+    else if(def.stat==='def') baseVal = 2;
+    else baseVal = 12; // hp
+    statValue = Math.max(1, Math.round(baseVal * levelScale * rarity.mult * (0.9+Math.random()*0.25) * 10)/10);
+  }
 
   return {
     uid: itemUid++,
@@ -1871,7 +1892,14 @@ function monsterAttack(){
   const isMonsterCrit = Math.random() < monsterCritChance;
   const variance = 0.85 + Math.random()*0.3;
   const rawDmg = S.monster.atk*variance*(isMonsterCrit?1.6:1) - totalStat('def')*0.5;
-  const dmg = Math.max(1, Math.round(rawDmg));
+  let dmg = Math.max(1, Math.round(rawDmg));
+  // TETTO DI SICUREZZA: nessun singolo colpo può superare una % degli HP massimi DEL GIOCATORE,
+  // qualunque siano i numeri grezzi. Protegge anche salvataggi vecchi/già molto avanzati (livello
+  // alto ma poca Difesa investita) da danni sproporzionati in un colpo solo, senza dover ritoccare
+  // a mano ogni possibile combinazione di livello/equip già esistente.
+  const capPct = S.monster.tier==='boss' ? 0.20 : S.monster.tier==='miniboss' ? 0.16 : 0.12;
+  const hardCap = Math.max(1, Math.round(S.hpMax * capPct * (isMonsterCrit?1.4:1)));
+  dmg = Math.min(dmg, hardCap);
   S.hp = Math.max(0, S.hp - dmg);
   showMonsterFloatingNumber(dmg, isMonsterCrit);
   if(S.hp <= 0){
