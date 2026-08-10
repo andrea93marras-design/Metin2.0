@@ -1068,8 +1068,15 @@ footer.credits{
 ===================================================== */
 const FIREBASE_DB_URL = 'https://pietre-corrotte-default-rtdb.firebaseio.com';
 
-const GAME_VERSION = '0.3.0';
+const GAME_VERSION = '0.3.1';
 const CHANGELOG = [
+  {version:'0.3.1', date:'7 ago 2026', categories:{
+    bilanciamento: [
+      'Corretto: l\u2019Attacco dei mostri normali non cresceva mai col livello del giocatore (solo con la zona), mentre Difesa/HP del giocatore continuavano a salire — il danno subito diventava trascurabile molto in fretta. Ora l\u2019Attacco dei mostri cresce gradualmente anche col livello',
+      'Ridotta la rigenerazione passiva tra un attacco del mostro e l\u2019altro, che prima assorbiva quasi per intero il danno ricevuto',
+      'Verificato con una sessione simulata di caccia prolungata: il danno subito ora è tangibile (fino a circa il 9% degli HP massimi) senza però causare sconfitte ingiustificate durante la caccia normale'
+    ]
+  }},
   {version:'0.3.0', date:'7 ago 2026', categories:{
     versioning: [
       'Il progetto passa a una numerazione di sviluppo <b>v0.x</b>: le versioni precedenti "1.x/2.x" non erano numerazione ufficiale. La versione 1.0 verrà assegnata solo quando lo deciderà chi sta seguendo lo sviluppo del gioco'
@@ -1470,8 +1477,11 @@ function spawnMonster(){
   const monsterLevel = Math.max(1, Math.round(zone.reqLevel + (S.level-zone.reqLevel)*0.25) + (isBoss?3:0));
   // difesa reale del mostro: riduce il danno inflitto dal giocatore (mai sotto 1 danno)
   const monsterDef = Math.max(0, Math.round((1 + zoneIdx*1.8) * (isBoss?1.6:1)));
-  // attacco reale del mostro: usato per il contrattacco, mitigato dalla Difesa del giocatore
-  const monsterAtk = Math.max(1, Math.round((2 + zoneIdx*4) * (isBoss?1.8:1) * (0.85+Math.random()*0.3)));
+  // attacco reale del mostro: usato per il contrattacco, mitigato dalla Difesa del giocatore.
+  // BILANCIAMENTO: cresce anche col livello del giocatore (non solo con la zona), altrimenti
+  // il danno subito diventa trascurabile in fretta man mano che Difesa/HP del giocatore salgono.
+  const levelMult = 1 + (Math.min(S.level,80)-1)*0.035;
+  const monsterAtk = Math.max(1, Math.round((2 + zoneIdx*4) * levelMult * (isBoss?1.8:1) * (0.85+Math.random()*0.3)));
 
   S.monster = {
     name: isBoss ? zone.bossName : names[idx],
@@ -1844,8 +1854,9 @@ function doAttack(manual){
     S.monsterLastAttackAt = now;
     monsterAttack();
   } else {
-    // leggera rigenerazione tra un attacco e l'altro del mostro (mantiene il ritmo idle-friendly)
-    S.hp = Math.min(S.hpMax, S.hp + Math.max(1, Math.round(S.hpMax*0.004)));
+    // leggera rigenerazione tra un attacco e l'altro del mostro (mantiene il ritmo idle-friendly,
+    // ma ridotta: prima assorbiva quasi per intero il danno subito, rendendolo trascurabile)
+    S.hp = Math.min(S.hpMax, S.hp + Math.max(1, Math.round(S.hpMax*0.0015)));
   }
 
   renderCombat();
