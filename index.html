@@ -270,6 +270,12 @@ body{padding-bottom:64px;}
 .item-detail-actions{display:flex; gap:8px; margin-top:14px;}
 .item-detail-actions button{flex:1;}
 
+/* ---------- Dungeon summary modal ---------- */
+.ds-stat-row{display:flex; justify-content:space-between; font-size:13px; color:var(--text-muted); padding:5px 0; border-bottom:1px dashed var(--border-soft);}
+.ds-stat-row b{color:var(--gold); font-family:var(--font-mono);}
+.ds-rewards-title{font-family:var(--font-display); color:var(--jade); font-size:13px; margin:14px 0 8px; text-align:center; letter-spacing:0.04em;}
+.ds-reward-row{background:var(--bg-inset); border:1px solid var(--border-soft); border-radius:6px; padding:8px 10px; margin-bottom:6px; font-size:12.5px;}
+
 /* ---------- Toast feedback ---------- */
 #toast-layer{position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:60; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none;}
 .toast{
@@ -432,9 +438,48 @@ body{padding-bottom:64px;}
 .combat-stage.boss-active{
   animation:bossPulse 1.3s ease-in-out infinite;
 }
+.combat-stage.fury.boss-active{
+  animation:bossPulse 0.75s ease-in-out infinite;
+}
 @keyframes bossPulse{
   0%,100%{ box-shadow:0 0 0 0 rgba(201,60,50,0), inset 0 0 30px rgba(201,60,50,0.04); }
   50%{ box-shadow:0 0 26px 5px rgba(201,60,50,0.55), inset 0 0 45px rgba(201,60,50,0.18); }
+}
+.dungeon-progress-row{
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--gold);
+  text-align:center;
+  margin-bottom:6px;
+  letter-spacing:0.02em;
+}
+.boss-info-row{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:2px 0 8px;
+}
+.boss-tier-badge, .boss-status-badge, .boss-pct-badge{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  padding:3px 8px;
+  border-radius:999px;
+  border:1px solid var(--border-soft);
+  background:var(--bg-inset);
+  color:var(--text-muted);
+}
+.boss-status-badge.fury{
+  color:var(--blood);
+  border-color:var(--blood-dim);
+  background:rgba(201,60,50,0.12);
+}
+.boss-status-badge.desperate{
+  color:var(--rarity-leggendario);
+  border-color:var(--rarity-leggendario);
+  background:rgba(224,152,63,0.14);
+  animation:bossPulse 0.6s ease-in-out infinite;
 }
 .zone-name{
   font-family:var(--font-display);
@@ -527,6 +572,7 @@ body{padding-bottom:64px;}
 
 /* HP / danger */
 .player-hp-row{
+  position:relative;
   display:flex;
   align-items:center;
   gap:10px;
@@ -534,6 +580,15 @@ body{padding-bottom:64px;}
   font-size:11.5px;
   color:var(--text-muted);
   margin-bottom:10px;
+}
+.floatnum.taken{
+  color:#7fb8e0;
+  text-shadow:0 0 6px rgba(127,184,224,0.6);
+}
+.floatnum.crit-taken{
+  color:var(--blood);
+  font-size:16px;
+  text-shadow:0 0 8px rgba(201,60,50,0.7);
 }
 .player-hp-row .bar{flex:1;}
 
@@ -747,6 +802,15 @@ body{padding-bottom:64px;}
 .changelog-version .cv-date{font-family:var(--font-mono); font-size:10px; color:var(--text-faint); font-weight:400;}
 .changelog-entry ul{margin:6px 0 0; padding-left:18px;}
 .changelog-entry li{font-size:12px; color:var(--text-muted); margin-bottom:3px;}
+.changelog-category{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  letter-spacing:0.03em;
+  color:var(--jade);
+  margin-top:10px;
+  font-weight:600;
+}
+.changelog-category:first-of-type{margin-top:8px;}
 
 .tooltip-hint{font-size:10px;color:var(--text-faint);text-align:center;margin-top:6px;}
 footer.credits{
@@ -796,8 +860,14 @@ footer.credits{
 
     <div class="combat-stage">
       <div class="zone-name" id="stage-zone">—</div>
+      <div id="dungeon-progress-row" class="dungeon-progress-row hidden">—</div>
       <div class="monster-glyph" id="monster-glyph">👹</div>
       <div class="monster-name" id="monster-name">—</div>
+      <div id="boss-info-row" class="boss-info-row hidden">
+        <span id="boss-tier-badge" class="boss-tier-badge">—</span>
+        <span id="boss-status-badge" class="boss-status-badge">—</span>
+        <span id="boss-pct-badge" class="boss-pct-badge">—</span>
+      </div>
       <div class="monster-hp-label" id="monster-hp-label">0 / 0</div>
       <div class="monster-hpbar"><div id="monster-hp-fill" class="monster-hpbar-fill" style="width:100%"></div></div>
       <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
@@ -926,6 +996,14 @@ footer.credits{
   </div>
 </div>
 
+<div class="modal-bg hidden" id="dungeon-summary-modal">
+  <div class="modal" style="max-width:380px; text-align:left;">
+    <h2 style="text-align:center;">🏆 DUNGEON COMPLETATO!</h2>
+    <div id="dungeon-summary-body"></div>
+    <button class="close-btn" id="dungeon-summary-close" style="display:block; margin:16px auto 0;">Continua</button>
+  </div>
+</div>
+
 
 <div class="modal-bg hidden" id="offline-modal">
   <div class="modal">
@@ -990,8 +1068,38 @@ footer.credits{
 ===================================================== */
 const FIREBASE_DB_URL = 'https://pietre-corrotte-default-rtdb.firebaseio.com';
 
-const GAME_VERSION = '2.0.1';
+const GAME_VERSION = '0.3.0';
 const CHANGELOG = [
+  {version:'0.3.0', date:'7 ago 2026', categories:{
+    versioning: [
+      'Il progetto passa a una numerazione di sviluppo <b>v0.x</b>: le versioni precedenti "1.x/2.x" non erano numerazione ufficiale. La versione 1.0 verrà assegnata solo quando lo deciderà chi sta seguendo lo sviluppo del gioco'
+    ],
+    implementazioni: [
+      'Combattimento bidirezionale: ora anche il mostro attacca, sul proprio timer indipendente basato sulla sua Velocità (non più una probabilità di contrattacco)',
+      'Mini-Boss e Boss per ogni zona, con statistiche proprie e possibilità reale di sconfitta per il giocatore',
+      'I Boss hanno tre fasi in base agli HP rimasti: 🛡️ Normale (100-50%), 🔥 Furia (50-20%, danno aumentato), 💀 Ultimo Sforzo (sotto 20%, danno e velocità d\u2019attacco aumentati)',
+      'Dungeon del Territorio degli Orchi: 4 piani automatici (mostri → mostri d\u2019élite → mini-boss → boss finale) con riepilogo finale, richiede livello 22',
+      'Drop e materiali esclusivi dei Boss (Frammento Corrotto, Nucleo del Boss, Pietra Antica), equipaggiamento con nome e statistiche potenziate legato al Boss che lo lascia',
+      'Cooldown per mini-boss (5 min), boss (20 min) e dungeon (30 min), con selettore di difficoltà Normale/Difficile/Esperto',
+      'Vera sconfitta del giocatore: 💀 la caccia automatica si ferma, HP ripristinati, si torna alla caccia normale della zona'
+    ],
+    bugfix: [
+      'Corretto un bug critico trovato prima della consegna: la riga informazioni Boss e il progresso Dungeon erano referenziati dal codice ma non esistevano ancora nella pagina, il che avrebbe bloccato il combattimento con un errore',
+      'Corretto un secondo bug critico: completare un Dungeon richiamava una funzione di riepilogo mai definita, quindi la schermata "DUNGEON COMPLETATO" con tempo/nemici/ricompense non appariva mai. Implementata e verificata con un dungeon portato a termine end-to-end'
+    ],
+    bilanciamento: [
+      'Le statistiche di mini-boss/boss non sono numeri inventati: derivano dalla stessa formula di scaling già in uso per i mostri normali, calcolata al livello richiesto della zona',
+      'La penalità per sconfitta è più leggera (5% dell\u2019oro) rispetto al vecchio meccanismo probabilistico, dato che ora la sconfitta è già di per sé un\u2019interruzione reale della caccia'
+    ],
+    uiux: [
+      'Nuova barra informativa per i combattimenti contro Boss veri: livello, fase attuale, percentuale HP',
+      'I numeri del danno subito sono ora visivamente distinti (colore blu/rosso) da quelli inflitti',
+      'Indicatore di progresso piano durante il Dungeon, pulsazione più intensa nella fase Ultimo Sforzo'
+    ],
+    ottimizzazione: [
+      'Il timer d\u2019attacco del mostro riusa lo stesso game loop già esistente (nessun nuovo setInterval), basandosi sul tempo reale trascorso'
+    ]
+  }},
   {version:'2.0.1', date:'7 ago 2026', notes:[
     'Corretto bug critico: chi aggiornava da un salvataggio precedente alla v2.0.0 restava bloccato con danno "NaN" al primo colpo (il mostro salvato non aveva ancora Attacco/Difesa propri). Ora un mostro salvato in un formato vecchio viene sostituito automaticamente con uno valido, senza perdere livello, oro o oggetti'
   ]},
@@ -1132,6 +1240,47 @@ const MONSTER_NAMES = {
   demoni:['Demone','Troll','Spirito Capobanda Oscuro']
 };
 
+/* =====================================================
+   FASE 3 — MINI-BOSS, BOSS E DUNGEON
+   Le statistiche di mini-boss/boss non sono numeri a sé: derivano dalla
+   stessa formula di scaling già usata per i mostri normali (bossBaseline),
+   calcolata al livello richiesto della zona, poi moltiplicata per il tier.
+   Così la difficoltà resta sempre coerente con l'equilibrio già esistente.
+===================================================== */
+const BOSS_TIER_MULT = {
+  miniboss: {hp:14, atk:2.2, def:2.5, gold:14, xp:14, levelBonus:6},
+  boss:     {hp:38, atk:3.4, def:4.0, gold:38, xp:38, levelBonus:12}
+};
+const BOSS_INFO = {
+  yongan:    {miniboss:'Orco Capo dei Prati',     boss:'Custode di Yongan',            icon:'👹', itemSuffix:'del Custode di Yongan'},
+  jayang:    {miniboss:'Belva del Valico',        boss:'Spirito della Tigre Bianca',   icon:'🐯', itemSuffix:'della Tigre del Valico'},
+  orchi:     {miniboss:'Sciamano degli Orchi',    boss:'Re degli Orchi',               icon:'👺', itemSuffix:'del Re degli Orchi'},
+  esoterici: {miniboss:'Adepto Oscuro',           boss:'Arcimago Esoterico',           icon:'🌑', itemSuffix:'dell\u2019Arcimago Esoterico'},
+  demoni:    {miniboss:'Emissario Infernale',     boss:'Signore dei Demoni',           icon:'💀', itemSuffix:'del Signore dei Demoni'}
+};
+const BOSS_DIFFICULTIES = [
+  {key:'normale',   label:'Normale',   statMult:1,   rewardMult:1},
+  {key:'difficile', label:'Difficile', statMult:1.6, rewardMult:1.35},
+  {key:'esperto',   label:'Esperto',   statMult:2.4, rewardMult:1.75}
+];
+const BOSS_COOLDOWN_MS = {miniboss: 5*60*1000, boss: 20*60*1000};
+const BOSS_MATERIAL_DEFS = [
+  {name:'Frammento Corrotto', icon:'💎'},
+  {name:'Nucleo del Boss', icon:'🔥'},
+  {name:'Pietra Antica', icon:'🪨'}
+];
+// Un'unica dungeon, ben strutturata, ospitata nella zona Territorio degli Orchi
+const DUNGEON_DEF = {
+  id:'dungeon_orchi', name:'Dungeon del Territorio degli Orchi', zoneId:'orchi', reqLevel:22,
+  cooldownMs: 30*60*1000,
+  floors:[
+    {label:'Piano 1 · Orde di Orchi', type:'mob', killsNeeded:5},
+    {label:'Piano 2 · Orchi d\u2019élite', type:'mob_strong', killsNeeded:5},
+    {label:'Piano 3 · Mini-Boss', type:'miniboss', killsNeeded:1},
+    {label:'Piano 4 · Boss Finale', type:'boss', killsNeeded:1}
+  ]
+};
+
 const UPGRADE_DEFS = [
   {key:'atk', name:'Forza Interiore', desc:'+2 Attacco', base:12, growth:1.15, effect:2, statKey:'atk'},
   {key:'speed', name:'Rapidità', desc:'-0.05s tra i colpi (min 0.4s)', base:30, growth:1.22, effect:0.05, statKey:'speed'},
@@ -1173,6 +1322,10 @@ function freshState(){
     avatarData:null,
     playerId:null,
     leaderboardOptIn:false,
+    bossCooldowns:{},
+    dungeonCooldownUntil:0,
+    dungeonState:null,
+    bossDifficulty:'normale',
     zoneId:'yongan',
     killCount:0,
     inBoss:false,
@@ -1327,10 +1480,190 @@ function spawnMonster(){
     hp: hpMax,
     hpMax: hpMax,
     atk: monsterAtk,
+    baseAtk: monsterAtk,
     def: monsterDef,
+    speed: Math.max(1.0, 2.1 - zoneIdx*0.15) * (isBoss?0.85:1), // velocità d'attacco propria del mostro (sec/colpo)
     isBoss: isBoss,
     goldReward: Math.floor(zone.goldBase * scaling * (isBoss?5:1) * (0.8+Math.random()*0.4)),
     xpReward: Math.floor(zone.xpBase * scaling * (isBoss?5:1) * (0.8+Math.random()*0.4))
+  };
+  resetMonsterAttackTimer();
+}
+function resetMonsterAttackTimer(){
+  // il mostro attacca sul proprio timer indipendente (basato sulla sua Velocità),
+  // usando il tempo reale così funziona con un solo game loop, senza interval duplicati
+  S.monsterLastAttackAt = Date.now();
+}
+
+/* --- Mini-boss / Boss veri (Fase 3): stesse formule di scaling di spawnMonster,
+   valutate al livello richiesto della zona così restano stabili e confrontabili --- */
+function bossBaseline(zone){
+  const zoneIdx = ZONES.findIndex(z=>z.id===zone.id);
+  const scaling = Math.pow(1.045, zone.reqLevel-1) * Math.pow(1.6, zoneIdx);
+  return { hp: zone.hpBase*scaling, atk: (2+zoneIdx*4), def: (1+zoneIdx*1.8), gold: zone.goldBase*scaling, xp: zone.xpBase*scaling };
+}
+function getBossDef(zoneId, tier){
+  const zone = ZONES.find(z=>z.id===zoneId);
+  const base = bossBaseline(zone);
+  const tm = BOSS_TIER_MULT[tier];
+  const info = BOSS_INFO[zoneId];
+  return {
+    key: `${zoneId}_${tier}`, zoneId, tier,
+    name: info[tier], icon: info.icon,
+    level: zone.reqLevel + tm.levelBonus,
+    hpBase: Math.max(10, Math.round(base.hp*tm.hp)),
+    atkBase: Math.max(3, Math.round(base.atk*tm.atk)),
+    defBase: Math.max(1, Math.round(base.def*tm.def)),
+    goldBase: Math.max(5, Math.round(base.gold*tm.gold)),
+    xpBase: Math.max(5, Math.round(base.xp*tm.xp))
+  };
+}
+function spawnBossEncounter(zoneId, tier, difficultyKey, inDungeon){
+  const def = getBossDef(zoneId, tier);
+  const diff = BOSS_DIFFICULTIES.find(d=>d.key===difficultyKey) || BOSS_DIFFICULTIES[0];
+  const hpMax = Math.round(def.hpBase * diff.statMult);
+  const baseAtk = Math.round(def.atkBase * diff.statMult);
+  S.monster = {
+    name: def.name, glyph: def.icon, level: def.level,
+    hp: hpMax, hpMax: hpMax,
+    atk: baseAtk,
+    baseAtk: baseAtk,
+    baseSpeed: tier==='boss' ? 1.3 : 1.55,
+    speed: tier==='boss' ? 1.3 : 1.55, // i boss veri attaccano più spesso dei mostri normali
+    def: Math.round(def.defBase * diff.statMult),
+    isBoss: true,
+    goldReward: Math.round(def.goldBase * diff.rewardMult),
+    xpReward: Math.round(def.xpBase * diff.rewardMult),
+    tier, bossKey: def.key, difficulty: diff.key, phase:'normale', inDungeon: !!inDungeon
+  };
+  S.inBoss = true;
+  resetMonsterAttackTimer();
+}
+function isBossOnCooldown(bossKey){ return (S.bossCooldowns[bossKey]||0) > Date.now(); }
+function bossCooldownRemaining(bossKey){ return Math.max(0, (S.bossCooldowns[bossKey]||0) - Date.now()); }
+function fmtDuration(ms){
+  const s = Math.max(0, Math.ceil(ms/1000));
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  return `${h>0?h+':':''}${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+function challengeBoss(zoneId, tier){
+  const def = getBossDef(zoneId, tier);
+  if(isBossOnCooldown(def.key)){
+    log(`⏱️ ${def.name} non è ancora pronto (${fmtDuration(bossCooldownRemaining(def.key))}).`);
+    return;
+  }
+  if(S.dungeonState){ log('Sei ancora nel dungeon: completalo prima di sfidare altri boss.'); return; }
+  spawnBossEncounter(zoneId, tier, S.bossDifficulty, false);
+  S.zoneId = zoneId;
+  log(`${def.icon} Hai sfidato <b>${def.name}</b> [${BOSS_DIFFICULTIES.find(d=>d.key===S.bossDifficulty).label}]!`, 'danger');
+  showView('home');
+  renderAll();
+}
+
+/* --- Dungeon (Fase 3): sequenza di piani sopra lo stesso ciclo di combattimento --- */
+function isDungeonOnCooldown(){ return (S.dungeonCooldownUntil||0) > Date.now(); }
+function startDungeon(){
+  const d = DUNGEON_DEF;
+  if(S.level < d.reqLevel){ log(`Il dungeon richiede il livello ${d.reqLevel}.`); return; }
+  if(isDungeonOnCooldown()){ log(`⏱️ Il dungeon non è ancora pronto (${fmtDuration(S.dungeonCooldownUntil-Date.now())}).`); return; }
+  if(S.dungeonState) return;
+  S.dungeonState = { floorIdx:0, killsThisFloor:0, startTime:Date.now(), totalKills:0, totalXp:0, totalGold:0, items:[] };
+  S.zoneId = d.zoneId;
+  spawnDungeonEncounter();
+  showToast('🏰 Sei entrato nel Dungeon!', 'levelup');
+  log(`🏰 Hai iniziato ${d.name}.`, 'legend');
+  showView('home');
+  renderAll();
+}
+function spawnDungeonEncounter(){
+  const d = DUNGEON_DEF;
+  const floor = d.floors[S.dungeonState.floorIdx];
+  if(floor.type==='miniboss' || floor.type==='boss'){
+    spawnBossEncounter(d.zoneId, floor.type, 'normale', true);
+  } else {
+    spawnMonster();
+    S.monster.inDungeon = true;
+    if(floor.type==='mob_strong'){
+      S.monster.hpMax = Math.round(S.monster.hpMax*1.8); S.monster.hp = S.monster.hpMax;
+      S.monster.atk = Math.round(S.monster.atk*1.3);
+      S.monster.def = Math.round(S.monster.def*1.3);
+    }
+  }
+}
+function advanceDungeon(lootedItems, goldGain, xpGain){
+  const ds = S.dungeonState;
+  if(!ds) return;
+  const d = DUNGEON_DEF;
+  ds.totalKills++;
+  ds.totalGold += goldGain||0;
+  ds.totalXp += xpGain||0;
+  if(lootedItems && lootedItems.length) ds.items.push(...lootedItems);
+  ds.killsThisFloor++;
+  const floor = d.floors[ds.floorIdx];
+  if(ds.killsThisFloor >= floor.killsNeeded){
+    ds.floorIdx++;
+    ds.killsThisFloor = 0;
+    if(ds.floorIdx >= d.floors.length){ finishDungeon(); return; }
+    log(`⬆️ Piano superato! Ora: <b>${d.floors[ds.floorIdx].label}</b>`, 'legend');
+  }
+  spawnDungeonEncounter();
+}
+function finishDungeon(){
+  const ds = S.dungeonState;
+  const elapsed = Date.now()-ds.startTime;
+  S.dungeonCooldownUntil = Date.now() + DUNGEON_DEF.cooldownMs;
+  showToast('🏆 DUNGEON COMPLETATO!', 'legend');
+  log(`🏆 Dungeon completato in ${fmtDuration(elapsed)}! Nemici sconfitti: ${ds.totalKills}.`, 'legend');
+  S.dungeonState = null;
+  spawnMonster();
+  openDungeonSummary(ds, elapsed);
+  renderAll();
+}
+function openDungeonSummary(ds, elapsedMs){
+  const body = document.getElementById('dungeon-summary-body');
+  const grouped = {};
+  (ds.items||[]).forEach(it=>{
+    if(!grouped[it.name]) grouped[it.name] = {item:it, count:0};
+    grouped[it.name].count++;
+  });
+  const rewardsHtml = Object.values(grouped).map(g=>{
+    const it = g.item;
+    return `<div class="ds-reward-row rar-${it.rarity}">${it.icon} ${itemDisplayName(it)}${g.count>1?` x${g.count}`:''}</div>`;
+  }).join('') || '<div class="ds-reward-row" style="color:var(--text-faint);">Nessun oggetto raccolto stavolta.</div>';
+  body.innerHTML = `
+    <div class="ds-stat-row"><span>⏱️ Tempo</span><b>${fmtDuration(elapsedMs)}</b></div>
+    <div class="ds-stat-row"><span>👹 Nemici sconfitti</span><b>${fmt(ds.totalKills)}</b></div>
+    <div class="ds-stat-row"><span>✨ EXP</span><b>+${fmt(ds.totalXp)}</b></div>
+    <div class="ds-stat-row"><span>🪙 Yang</span><b>+${fmt(ds.totalGold)}</b></div>
+    <div class="ds-rewards-title">🎁 RICOMPENSE</div>
+    ${rewardsHtml}
+  `;
+  document.getElementById('dungeon-summary-modal').classList.remove('hidden');
+}
+
+/* --- Bottino esclusivo dei boss veri --- */
+function generateBossItem(bossKey, tier){
+  const item = generateItem();
+  if(item.slot === 'materiale') return item;
+  const zoneId = bossKey.split('_')[0];
+  const mult = tier==='boss' ? 1.6 : 1.3;
+  item.statValue = Math.round(item.statValue*mult*10)/10;
+  item.bossExclusive = true;
+  item.name = `${item.name} ${(BOSS_INFO[zoneId]||{}).itemSuffix||''}`.trim();
+  if(item.rarity==='comune'){
+    const upgraded = RARITIES.find(r=>r.key==='raro');
+    item.rarity = upgraded.key; item.rarityLabel = upgraded.label;
+  }
+  return item;
+}
+function generateBossMaterial(){
+  const def = BOSS_MATERIAL_DEFS[Math.floor(Math.random()*BOSS_MATERIAL_DEFS.length)];
+  const rarity = RARITIES.find(r=>r.key==='epico');
+  return {
+    uid: itemUid++, slot:'materiale', name:def.name, rarity:rarity.key, rarityLabel:rarity.label,
+    icon:def.icon, statType:'materiale', statLabel:'Valore',
+    statValue: Math.round((8 + S.level*0.6)*10)/10,
+    refine:0, classKey:null, locked:false, bossMaterial:true
   };
 }
 
@@ -1475,6 +1808,9 @@ let floatId = 0;
 
 function doAttack(manual){
   if(!S.monster) spawnMonster();
+  if(S.hp<=0) return; // il giocatore è a terra: nessuna azione finché non si riprende
+
+  // --- Attacco del GIOCATORE (invariata la formula, già introdotta in Fase 2) ---
   const atk = totalStat('atk');
   const variance = 0.85 + Math.random()*0.3;
   const critChance = 0.10 + (currentClass().bonusPct.crit||0)/100; // base 10% + bonus di classe
@@ -1487,31 +1823,99 @@ function doAttack(manual){
   if(manual) showFloatingNumber(dmg, isCrit);
   pulseGlyph();
 
-  // small retaliation chance, using il vero Attacco del mostro mitigato dalla Difesa del giocatore
-  const retaliateChance = S.monster.isBoss ? 0.35 : 0.12;
-  if(Math.random() < retaliateChance){
-    const mitigated = Math.max(1, Math.round(S.monster.atk - totalStat('def')*0.6));
-    S.hp = Math.max(0, S.hp - mitigated);
-    if(S.hp <= 0){
-      const penalty = Math.round(S.yang*0.1);
-      S.yang -= penalty;
-      S.hp = S.hpMax;
-      log(`💥 Sei stato sopraffatto e hai perso ${fmt(penalty)} 💰 nella fuga! La vita è tornata piena.`, 'danger');
-    }
-  } else {
-    // gentle regen when not hit
-    S.hp = Math.min(S.hpMax, S.hp + Math.max(1, Math.round(S.hpMax*0.01)));
-  }
+  // FASE 3 — fasi del boss (100%→50% Normale, 50%→20% Furia, <20% Ultimo Sforzo)
+  updateBossPhase();
 
   if(S.monster.hp <= 0){
     killMonster();
+    renderCombat();
+    renderStats();
+    renderTop();
+    return; // il mostro è morto: non contrattacca più
   }
-  // aggiornamenti leggeri ad ogni colpo (performance): le liste pesanti (inventario,
-  // equip, titoli, zone, potenziamenti) si aggiornano solo quando cambia davvero
-  // qualcosa, dentro killMonster()/checkTitles()/gainXp(), non ad ogni tick.
+
+  // --- Attacco del MOSTRO: combattimento bidirezionale (Fase 3) ---
+  // Il mostro attacca sul proprio timer indipendente, basato sulla sua Velocità reale,
+  // usando il tempo reale trascorso: nessun secondo interval, si aggancia allo stesso
+  // game loop del giocatore (chiamato sia dal tick automatico sia dai click manuali).
+  const monsterIntervalMs = Math.max(400, (S.monster.speed||1.8) * 1000);
+  const now = Date.now();
+  if(now - (S.monsterLastAttackAt||0) >= monsterIntervalMs){
+    S.monsterLastAttackAt = now;
+    monsterAttack();
+  } else {
+    // leggera rigenerazione tra un attacco e l'altro del mostro (mantiene il ritmo idle-friendly)
+    S.hp = Math.min(S.hpMax, S.hp + Math.max(1, Math.round(S.hpMax*0.004)));
+  }
+
   renderCombat();
   renderStats();
   renderTop();
+}
+
+/* --- FASE 3: attacco del mostro sul proprio timer (combattimento bidirezionale) --- */
+function monsterAttack(){
+  if(!S.monster || S.hp<=0) return;
+  const monsterCritChance = (S.monster.tier==='boss') ? 0.14 : (S.monster.tier==='miniboss') ? 0.10 : 0.06;
+  const isMonsterCrit = Math.random() < monsterCritChance;
+  const variance = 0.85 + Math.random()*0.3;
+  const rawDmg = S.monster.atk*variance*(isMonsterCrit?1.6:1) - totalStat('def')*0.5;
+  const dmg = Math.max(1, Math.round(rawDmg));
+  S.hp = Math.max(0, S.hp - dmg);
+  showMonsterFloatingNumber(dmg, isMonsterCrit);
+  if(S.hp <= 0){
+    handlePlayerDefeat();
+  }
+}
+
+/* --- FASE 3: fasi del boss — Normale (100-50%), Furia (50-20%), Ultimo Sforzo (<20%) --- */
+function updateBossPhase(){
+  const m = S.monster;
+  if(!m || m.hp<=0 || !(m.tier==='miniboss' || m.tier==='boss')) return;
+  const pct = m.hp / m.hpMax;
+  let phase = 'normale';
+  if(pct < 0.2) phase = 'ultimosforzo';
+  else if(pct < 0.5) phase = 'furia';
+  if(phase === (m.phase||'normale')) return;
+  m.phase = phase;
+  if(phase==='furia'){
+    m.atk = Math.round((m.baseAtk||m.atk) * 1.4);
+    showToast('🔥 IL BOSS È ENTRATO IN FURIA!', 'rare');
+    log(`🔥 <b>${m.name}</b> è entrato in Furia! Il danno che infligge è aumentato.`, 'danger');
+  } else if(phase==='ultimosforzo'){
+    m.atk = Math.round((m.baseAtk||m.atk) * 1.8);
+    m.speed = Math.max(0.7, (m.baseSpeed||m.speed) * 0.7);
+    showToast('💀 ULTIMO SFORZO!', 'legend');
+    log(`💀 <b>${m.name}</b> tenta un ultimo, disperato sforzo: attacca più forte e più spesso!`, 'danger');
+  }
+}
+
+/* --- FASE 3: sconfitta reale del giocatore --- */
+function handlePlayerDefeat(){
+  S.hp = 0;
+  renderStats();
+  showToast('💀 SEI STATO SCONFITTO', 'danger');
+  const wasInDungeon = !!S.dungeonState;
+  const enemyName = S.monster ? S.monster.name : 'un nemico';
+  log(`💀 Sei stato sconfitto da <b>${enemyName}</b>! La caccia automatica si è fermata.`, 'danger');
+  setAutoHunting(false);
+  // penalità limitata (coerente con quella già presente in precedenza, non aggiuntiva): la
+  // vera conseguenza è l'interruzione della caccia, non una perdita pesante di risorse
+  const penalty = Math.round(S.yang*0.05);
+  if(penalty>0){
+    S.yang = Math.max(0, S.yang - penalty);
+    log(`Hai perso ${fmt(penalty)} 💰 nella ritirata.`);
+  }
+  if(wasInDungeon){
+    log('Il tentativo di Dungeon termina qui: nessuna ricompensa per questo piano, ma nessun nuovo cooldown aggiuntivo.', 'danger');
+    S.dungeonState = null;
+  }
+  // il giocatore si riprende: HP ripristinati e si torna alla caccia normale della zona,
+  // così non resta bloccato di fronte a un boss che l'ha appena sconfitto
+  S.hp = S.hpMax;
+  S.monster = null;
+  spawnMonster();
+  renderAll();
 }
 
 function killMonster(){
@@ -1525,38 +1929,64 @@ function killMonster(){
   let logCls = m.isBoss ? 'danger' : '';
   log(`${m.isBoss?'👑 ':''}Hai sconfitto <b>${m.name}</b> · +${fmt(goldGain)} 💰 · +${fmt(m.xpReward)} XP`, logCls);
 
-  // loot roll
-  const dropChance = Math.min(85, totalStat('drop') + (m.isBoss?25:0));
-  if(Math.random()*100 < dropChance){
-    const item = generateItem();
-    if(item.rarity==='leggendario') S.hasLegendary = true;
-    S.inventory.push(item);
-    const cls = item.rarity==='leggendario'?'legend':(item.rarity==='epico'?'rare':'drop');
-    log(`${RARITIES.find(r=>r.key===item.rarity).icon} Bottino: <b>${itemDisplayName(item)}</b> [${item.rarityLabel}]`, cls);
-    if(item.rarity==='epico') showToast(`🎁 OGGETTO EPICO! ${item.name}`, 'rare');
-    if(item.rarity==='leggendario') showToast(`🔥 OGGETTO LEGGENDARIO! ${item.name}`, 'legend');
-    if(S.autoEquip) maybeAutoEquip(item);
-    if(S.inventory.length > INVENTORY_SIZE){
-      // auto-sell oldest unlocked common to keep list manageable; never touch locked items
-      const idx = S.inventory.findIndex(i=>i.rarity==='comune' && !i.locked);
-      if(idx>-1){
-        S.yang += sellValue(S.inventory[idx]);
-        S.inventory.splice(idx,1);
-      } else {
-        const idxAny = S.inventory.findIndex(i=>!i.locked);
-        if(idxAny>-1) S.inventory.splice(idxAny,1);
-        // se è tutto bloccato, l'inventario cresce temporaneamente oltre il limite
-        // piuttosto che eliminare un oggetto che il giocatore ha protetto
+  const isTrueBoss = m.tier==='miniboss' || m.tier==='boss';
+  const lootedItems = [];
+
+  // loot roll — i mini-boss/boss veri hanno più tentativi e più possibilità di drop
+  const tierDropBonus = m.tier==='boss' ? 60 : m.tier==='miniboss' ? 35 : (m.isBoss?25:0);
+  const dropChance = Math.min(95, totalStat('drop') + tierDropBonus);
+  const dropRolls = isTrueBoss ? 2 : 1;
+  for(let r=0;r<dropRolls;r++){
+    if(Math.random()*100 < dropChance){
+      const item = (isTrueBoss && Math.random()<0.5) ? generateBossItem(m.bossKey, m.tier) : generateItem();
+      if(item.rarity==='leggendario') S.hasLegendary = true;
+      S.inventory.push(item);
+      lootedItems.push(item);
+      const cls = item.rarity==='leggendario'?'legend':(item.rarity==='epico'?'rare':'drop');
+      log(`${RARITIES.find(r=>r.key===item.rarity).icon} Bottino: <b>${itemDisplayName(item)}</b> [${item.rarityLabel}]${item.bossExclusive?' 🏆':''}`, cls);
+      if(item.rarity==='epico') showToast(`🎁 OGGETTO EPICO! ${item.name}`, 'rare');
+      if(item.rarity==='leggendario') showToast(`🔥 OGGETTO LEGGENDARIO! ${item.name}`, 'legend');
+      if(S.autoEquip) maybeAutoEquip(item);
+      if(S.inventory.length > INVENTORY_SIZE){
+        // auto-sell oldest unlocked common to keep list manageable; never touch locked items
+        const idx = S.inventory.findIndex(i=>i.rarity==='comune' && !i.locked);
+        if(idx>-1){
+          S.yang += sellValue(S.inventory[idx]);
+          S.inventory.splice(idx,1);
+        } else {
+          const idxAny = S.inventory.findIndex(i=>!i.locked);
+          if(idxAny>-1) S.inventory.splice(idxAny,1);
+          // se è tutto bloccato, l'inventario cresce temporaneamente oltre il limite
+          // piuttosto che eliminare un oggetto che il giocatore ha protetto
+        }
       }
     }
-    renderInventory();
-    renderGear();
   }
+  // materiali speciali garantiti dai mini-boss/boss veri (Fase 3)
+  if(isTrueBoss){
+    const matCount = m.tier==='boss' ? 2 : 1;
+    for(let i=0;i<matCount;i++){
+      const mat = generateBossMaterial();
+      S.inventory.push(mat);
+      lootedItems.push(mat);
+      log(`${mat.icon} Materiale raro: <b>${mat.name}</b>`, 'rare');
+    }
+  }
+  if(lootedItems.length>0){ renderInventory(); renderGear(); }
 
-  // small chance monster retaliates before dying (danger sim)
   S.killCount++;
-  spawnMonster();
   checkTitles();
+
+  if(m.inDungeon){
+    advanceDungeon(lootedItems, goldGain, m.xpReward);
+  } else if(isTrueBoss){
+    S.bossCooldowns[m.bossKey] = Date.now() + BOSS_COOLDOWN_MS[m.tier];
+    showToast(`🏆 ${m.name.toUpperCase()} SCONFITTO!`, 'legend');
+    log(`🏆 Hai sconfitto ${m.name}! Torna disponibile tra ${fmtDuration(BOSS_COOLDOWN_MS[m.tier])}.`, 'legend');
+    spawnMonster();
+  } else {
+    spawnMonster();
+  }
 }
 
 function checkTitles(){
@@ -1661,6 +2091,17 @@ function showFloatingNumber(dmg, isCrit){
   el.style.top = '50%';
   stage.appendChild(el);
   setTimeout(()=>el.remove(), isCrit ? 820 : 720);
+}
+function showMonsterFloatingNumber(dmg, isCrit){
+  const row = document.querySelector('.player-hp-row');
+  if(!row) return;
+  const el = document.createElement('div');
+  el.className = 'floatnum taken' + (isCrit?' crit-taken':'');
+  el.textContent = (isCrit ? 'CRIT! -' : '-') + fmt(dmg);
+  el.style.left = (10+Math.random()*20)+'%';
+  el.style.top = '-4px';
+  row.appendChild(el);
+  setTimeout(()=>el.remove(), 720);
 }
 function pulseGlyph(){
   const g = document.getElementById('monster-glyph');
@@ -1850,6 +2291,17 @@ function renderGear(){
 function renderZoneTabs(){
   const wrap = document.getElementById('zone-tabs');
   wrap.innerHTML = '';
+
+  // selettore di difficoltà condiviso, applicato alla prossima sfida boss avviata
+  const diffRow = document.createElement('div');
+  diffRow.className = 'boss-diff-row';
+  diffRow.innerHTML = `<span>⚔️ Difficoltà boss:</span>
+    <select id="boss-difficulty-select">
+      ${BOSS_DIFFICULTIES.map(d=>`<option value="${d.key}" ${d.key===S.bossDifficulty?'selected':''}>${d.label}</option>`).join('')}
+    </select>`;
+  wrap.appendChild(diffRow);
+  diffRow.querySelector('select').addEventListener('change', (e)=>{ S.bossDifficulty = e.target.value; save(); });
+
   ZONES.forEach(z=>{
     const locked = S.level < z.reqLevel;
     const active = z.id===S.zoneId;
@@ -1874,6 +2326,52 @@ function renderZoneTabs(){
         }
         showView('home');
       };
+
+      // FASE 3 — riga sfide: mini-boss e boss della zona
+      const info = BOSS_INFO[z.id];
+      const mbDef = getBossDef(z.id, 'miniboss');
+      const bDef = getBossDef(z.id, 'boss');
+      const challengeRow = document.createElement('div');
+      challengeRow.className = 'zc-challenge-row';
+      challengeRow.innerHTML = `
+        <button class="buy-btn zc-boss-btn" data-zone="${z.id}" data-tier="miniboss">
+          👹 ${info.miniboss} <span class="zc-boss-lv">Lv.${mbDef.level}</span>
+        </button>
+        <button class="buy-btn zc-boss-btn" data-zone="${z.id}" data-tier="boss">
+          🐉 ${info.boss} <span class="zc-boss-lv">Lv.${bDef.level}</span>
+        </button>
+      `;
+      challengeRow.querySelectorAll('.zc-boss-btn').forEach(btn=>{
+        const tier = btn.dataset.tier;
+        const def = tier==='miniboss' ? mbDef : bDef;
+        const onCd = isBossOnCooldown(def.key);
+        if(onCd){
+          btn.disabled = true;
+          btn.innerHTML += `<br><span class="zc-cooldown">⏱️ ${fmtDuration(bossCooldownRemaining(def.key))}</span>`;
+        }
+        btn.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          challengeBoss(z.id, tier);
+        });
+      });
+      card.appendChild(challengeRow);
+
+      // FASE 3 — dungeon (una sola, ospitata nella zona degli Orchi)
+      if(DUNGEON_DEF.zoneId === z.id){
+        const dungeonLocked = S.level < DUNGEON_DEF.reqLevel;
+        const dungeonCd = isDungeonOnCooldown();
+        const dRow = document.createElement('div');
+        dRow.className = 'zc-dungeon-row';
+        if(dungeonLocked){
+          dRow.innerHTML = `<div class="zc-dungeon-locked">🔒 DUNGEON BLOCCATO · Richiede livello ${DUNGEON_DEF.reqLevel}</div>`;
+        } else {
+          dRow.innerHTML = `<button class="buy-btn zc-dungeon-btn" ${dungeonCd||S.dungeonState?'disabled':''}>
+            🏰 ${S.dungeonState ? 'Dungeon in corso...' : (dungeonCd ? `⏱️ ${fmtDuration(S.dungeonCooldownUntil-Date.now())}` : `Entra: ${DUNGEON_DEF.name}`)}
+          </button>`;
+          dRow.querySelector('button').addEventListener('click', (e)=>{ e.stopPropagation(); startDungeon(); });
+        }
+        card.appendChild(dRow);
+      }
     }
     wrap.appendChild(card);
   });
@@ -1892,6 +2390,33 @@ function renderCombat(){
   document.getElementById('monster-hp-label').textContent = `${fmt(Math.max(0,m.hp))} / ${fmt(m.hpMax)}`;
   document.getElementById('monster-hp-fill').style.width = Math.max(0,(m.hp/m.hpMax)*100)+'%';
   document.querySelector('.combat-stage').classList.toggle('boss-active', !!m.isBoss);
+  document.querySelector('.combat-stage').classList.toggle('fury', !!m.fury);
+
+  // FASE 3 — riga info boss (tier + stato), visibile solo per mini-boss/boss veri
+  const infoRow = document.getElementById('boss-info-row');
+  const isTrueBoss = m.tier==='miniboss' || m.tier==='boss';
+  infoRow.classList.toggle('hidden', !isTrueBoss);
+  if(isTrueBoss){
+    const pct = Math.max(0, Math.round((m.hp/m.hpMax)*100));
+    document.getElementById('boss-tier-badge').textContent = m.tier==='boss' ? '🐉 BOSS' : '👹 MINI-BOSS';
+    document.getElementById('boss-pct-badge').textContent = `${pct}% HP`;
+    const statusEl = document.getElementById('boss-status-badge');
+    const phase = m.phase || 'normale';
+    const phaseLabel = phase==='ultimosforzo' ? '💀 ULTIMO SFORZO' : phase==='furia' ? '🔥 FURIA' : '🛡️ NORMALE';
+    statusEl.textContent = phaseLabel;
+    statusEl.className = 'boss-status-badge' + (phase!=='normale' ? ' fury' : '') + (phase==='ultimosforzo' ? ' desperate' : '');
+  }
+
+  // FASE 3 — progresso dungeon
+  const dRow = document.getElementById('dungeon-progress-row');
+  if(S.dungeonState){
+    dRow.classList.remove('hidden');
+    const floor = DUNGEON_DEF.floors[S.dungeonState.floorIdx];
+    dRow.textContent = `🏰 ${floor.label} — ${S.dungeonState.killsThisFloor}/${floor.killsNeeded}`;
+  } else {
+    dRow.classList.add('hidden');
+    dRow.textContent = '—';
+  }
 }
 function renderUpgrades(){
   const list = document.getElementById('upgrade-list');
@@ -2006,6 +2531,7 @@ setInterval(tickWatcher, 300);
    OFFLINE PROGRESS
 ===================================================== */
 function applyOfflineProgress(){
+  if(S.dungeonState || (S.monster && S.monster.tier)) return; // scontro speciale in corso: nessuna simulazione generica
   const now = Date.now();
   const elapsedSec = Math.min(8*3600, Math.max(0,(now - (S.lastSave||now))/1000));
   if(elapsedSec < 30) return; // not worth showing
@@ -2128,18 +2654,39 @@ document.getElementById('item-detail-sell').addEventListener('click', ()=>{
 document.getElementById('item-detail-close').addEventListener('click', ()=>{
   document.getElementById('item-detail-modal').classList.add('hidden');
 });
+document.getElementById('dungeon-summary-close').addEventListener('click', ()=>{
+  document.getElementById('dungeon-summary-modal').classList.add('hidden');
+});
 
 document.getElementById('attack-btn').addEventListener('click', ()=>doAttack(true));
 document.getElementById('hunt-toggle').addEventListener('click', ()=>setAutoHunting(!S.autoHunting));
 
+const CHANGELOG_CATEGORY_LABELS = {
+  versioning: '🔢 VERSIONAMENTO',
+  implementazioni: '✨ IMPLEMENTAZIONI',
+  bugfix: '🐛 BUGFIX',
+  bilanciamento: '⚖️ BILANCIAMENTO',
+  uiux: '🎨 UI / UX',
+  ottimizzazione: '⚡ OTTIMIZZAZIONE'
+};
 function renderChangelog(){
   const list = document.getElementById('changelog-list');
   list.innerHTML = '';
   CHANGELOG.forEach(entry=>{
     const div = document.createElement('div');
     div.className = 'changelog-entry';
-    div.innerHTML = `<div class="changelog-version">v${entry.version} <span class="cv-date">${entry.date}</span></div>
-      <ul>${entry.notes.map(n=>`<li>${n}</li>`).join('')}</ul>`;
+    let body;
+    if(entry.categories){
+      body = Object.keys(CHANGELOG_CATEGORY_LABELS)
+        .filter(catKey=>entry.categories[catKey] && entry.categories[catKey].length)
+        .map(catKey=>`
+          <div class="changelog-category">${CHANGELOG_CATEGORY_LABELS[catKey]}</div>
+          <ul>${entry.categories[catKey].map(n=>`<li>${n}</li>`).join('')}</ul>
+        `).join('');
+    } else {
+      body = `<ul>${entry.notes.map(n=>`<li>${n}</li>`).join('')}</ul>`;
+    }
+    div.innerHTML = `<div class="changelog-version">v${entry.version} <span class="cv-date">${entry.date}</span></div>${body}`;
     list.appendChild(div);
   });
 }
@@ -2377,7 +2924,9 @@ setInterval(save, 10000);
    INIT
 ===================================================== */
 function init(){
-  if(!S.monster) spawnMonster();
+  if(!S.monster){
+    if(S.dungeonState) spawnDungeonEncounter(); else spawnMonster();
+  }
   S.hpMax = totalStat('maxhp');
   if(!S.hp || S.hp<=0) S.hp = S.hpMax;
   document.getElementById('auto-equip').checked = S.autoEquip !== false;
