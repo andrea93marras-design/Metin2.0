@@ -1357,6 +1357,9 @@ function freshState(){
     autoEquip:true,
     autoHunting:false,
     lastSave:Date.now(),
+    monsterLastAttackAt:0,
+    playerLastAttackAt:0,
+    lastRegenAt:0,
     totalKills:0,
     bossKills:0,
     hasLegendary:false,
@@ -1511,11 +1514,6 @@ function spawnMonster(){
     xpReward: Math.floor(zone.xpBase * scaling * (isBoss?5:1) * (0.8+Math.random()*0.4))
   };
   resetMonsterAttackTimer();
-}
-function resetMonsterAttackTimer(){
-  // il mostro attacca sul proprio timer indipendente (basato sulla sua Velocità),
-  // usando il tempo reale così funziona con un solo game loop, senza interval duplicati
-  S.monsterLastAttackAt = Date.now();
 }
 
 /* --- Mini-boss / Boss veri (Fase 3): stesse formule di scaling di spawnMonster,
@@ -1834,14 +1832,66 @@ function log(msg, cls){
 /* =====================================================
    COMBAT
 ===================================================== */
-let tickTimer = null;
+let combatLoopTimer = null;
 let floatId = 0;
 
-function doAttack(manual){
+// FASE 3.1 — rigenerazione realmente basata sul tempo trascorso (mai sul numero di attacchi/click)
+const REGEN_PCT_PER_SEC = 0.003; // 0.3% degli HP massimi al secondo (valore già in uso, ora applicato per tempo)
+const MAX_REGEN_CATCHUP_SEC = 5; // tetto di sicurezza: evita salti enormi dopo pause lunghe/tab in background
+
+function resetMonsterAttackTimer(){
+  // il mostro attacca sul proprio timer indipendente (basato sulla sua Velocità),
+  // usando il tempo reale così funziona con un solo game loop, senza interval duplicati
+  S.monsterLastAttackAt = Date.now();
+}
+function resetPlayerAttackTimer(){
+  S.playerLastAttackAt = Date.now();
+}
+// FASE 3.1 — richiamata quando il combattimento "riparte" (avvio caccia, avvio loop):
+// evita che tempo già trascorso da fermo causi un colpo automatico o rigenerazione arretrati
+function resetCombatClocks(){
+  const now = Date.now();
+  S.playerLastAttackAt = now;
+  S.lastRegenAt = now;
+}
+
+/* FASE 3.1 — rigenerazione deterministica rispetto al tempo, indipendente da doAttack() */
+function applyRegen(now){
+  if(S.hp<=0){ S.lastRegenAt = now; return; }
+  const last = S.lastRegenAt || now;
+  let elapsedSec = (now - last) / 1000;
+  if(elapsedSec <= 0) return;
+  elapsedSec = Math.min(elapsedSec, MAX_REGEN_CATCHUP_SEC);
+  S.lastRegenAt = now;
+  if(S.hp >= S.hpMax) return;
+  const gain = S.hpMax * REGEN_PCT_PER_SEC * elapsedSec;
+  if(gain <= 0) return;
+  const before = S.hp;
+  S.hp = Math.min(S.hpMax, S.hp + gain);
+  if(S.hp !== before) renderStats();
+}
+
+/* FASE 3.1 — attacco del mostro: controllato sul proprio timer indipendente, non più
+   agganciato all'esecuzione dell'attacco del giocatore. Chiamato sia dal game loop
+   automatico sia (una volta, in modo puramente time-gated) dal click manuale. */
+function checkMonsterAttack(now){
+  if(!S.monster || S.monster.hp<=0 || S.hp<=0) return;
+  const monsterIntervalMs = Math.max(400, (S.monster.speed||1.8) * 1000);
+  if(now - (S.monsterLastAttackAt||0) >= monsterIntervalMs){
+    S.monsterLastAttackAt = now;
+    monsterAttack();
+    renderCombat();
+    renderStats();
+    renderTop();
+  }
+}
+
+/* --- Attacco del GIOCATORE (formula invariata, già introdotta in Fase 2) ---
+   Ora isolato dal controllo del mostro: occuparsi solo del proprio colpo. */
+function performPlayerAttack(manual){
   if(!S.monster) spawnMonster();
   if(S.hp<=0) return; // il giocatore è a terra: nessuna azione finché non si riprende
 
-  // --- Attacco del GIOCATORE (invariata la formula, già introdotta in Fase 2) ---
   const atk = totalStat('atk');
   const variance = 0.85 + Math.random()*0.3;
   const critChance = 0.10 + (currentClass().bonusPct.crit||0)/100; // base 10% + bonus di classe
@@ -1851,7 +1901,12 @@ function doAttack(manual){
   const dmg = Math.max(1, Math.round(rawDmg));
   S.monster.hp -= dmg;
 
-  if(manual) showFloatingNumber(dmg, isCrit);
+  if(manual){
+    showFloatingNumber(dmg, isCrit);
+    // il click manuale attacca subito ma non deve "sommarsi" al prossimo colpo automatico:
+    // riallinea solo il TIMER DEL GIOCATORE, mai quello del mostro (Regola sezione 6)
+    resetPlayerAttackTimer();
+  }
   pulseGlyph();
 
   // FASE 3 — fasi del boss (100%→50% Normale, 50%→20% Furia, <20% Ultimo Sforzo)
@@ -1865,29 +1920,24 @@ function doAttack(manual){
     return; // il mostro è morto: non contrattacca più
   }
 
-  // --- Attacco del MOSTRO: combattimento bidirezionale (Fase 3) ---
-  // Il mostro attacca sul proprio timer indipendente, basato sulla sua Velocità reale,
-  // usando il tempo reale trascorso: nessun secondo interval, si aggancia allo stesso
-  // game loop del giocatore (chiamato sia dal tick automatico sia dai click manuali).
-  const monsterIntervalMs = Math.max(400, (S.monster.speed||1.8) * 1000);
-  const now = Date.now();
-  if(now - (S.monsterLastAttackAt||0) >= monsterIntervalMs){
-    S.monsterLastAttackAt = now;
-    monsterAttack();
-  } else {
-    // leggera rigenerazione tra un attacco e l'altro del mostro (mantiene il ritmo idle-friendly,
-    // ma ridotta: prima assorbiva quasi per intero il danno subito, rendendolo trascurabile)
-    S.hp = Math.min(S.hpMax, S.hp + Math.max(1, Math.round(S.hpMax*0.0015)));
-  }
-
   renderCombat();
   renderStats();
   renderTop();
 }
 
+/* Punto d'ingresso storico (bottone manuale + vecchie chiamate): esegue SOLO l'attacco
+   del giocatore, poi valuta rigenerazione e attacco del mostro in modo indipendente,
+   con lo stesso criterio "tempo trascorso" usato dal game loop automatico. */
+function doAttack(manual){
+  performPlayerAttack(manual);
+  const now = Date.now();
+  applyRegen(now);
+  checkMonsterAttack(now);
+}
+
 /* --- FASE 3: attacco del mostro sul proprio timer (combattimento bidirezionale) --- */
 function monsterAttack(){
-  if(!S.monster || S.hp<=0) return;
+  if(!S.monster || S.monster.hp<=0 || S.hp<=0) return;
   const monsterCritChance = (S.monster.tier==='boss') ? 0.14 : (S.monster.tier==='miniboss') ? 0.10 : 0.06;
   const isMonsterCrit = Math.random() < monsterCritChance;
   const variance = 0.85 + Math.random()*0.3;
@@ -1954,6 +2004,7 @@ function handlePlayerDefeat(){
   S.hp = S.hpMax;
   S.monster = null;
   spawnMonster();
+  resetCombatClocks(); // FASE 3.1: niente colpi/rigenerazione "arretrati" accumulati durante il KO
   renderAll();
 }
 
@@ -2539,32 +2590,41 @@ function renderAll(){
 /* =====================================================
    GAME LOOP
 ===================================================== */
-function startLoop(){
-  if(tickTimer) clearInterval(tickTimer);
-  tickTimer = null;
+// FASE 3.1: un solo game loop persistente (nessun setInterval duplicato). Ogni tick
+// controlla in modo indipendente il timer del giocatore e quello del mostro, invece di
+// far dipendere l'attacco del mostro dall'esecuzione di doAttack(). Il loop stesso è un
+// no-op quando la caccia automatica è spenta o non c'è un combattimento in corso, quindi
+// non serve fermarlo/ricrearlo a ogni cambio di zona/dungeon/morte: quelle transizioni
+// sono già gestite azzerando lo stato (S.monster, S.hp, i timer) nei punti giusti.
+const LOOP_TICK_MS = 150;
+function gameTick(){
   if(!S.autoHunting) return;
-  const interval = totalStat('speed')*1000;
-  tickTimer = setInterval(()=>{
-    doAttack(false);
-  }, interval);
+  if(S.hp<=0 || !S.monster) return;
+  const now = Date.now();
+
+  // MONSTER TIMER — indipendente da quando/se il giocatore ha attaccato
+  checkMonsterAttack(now);
+
+  // rigenerazione basata sul tempo reale trascorso, mai sul numero di attacchi
+  applyRegen(now);
+
+  // PLAYER TIMER — indipendente dal timer del mostro
+  const playerIntervalMs = totalStat('speed') * 1000;
+  if(now - (S.playerLastAttackAt||0) >= playerIntervalMs){
+    S.playerLastAttackAt = now;
+    performPlayerAttack(false);
+  }
+}
+function startLoop(){
+  if(combatLoopTimer) return; // evita timer duplicati: il loop parte una sola volta per sessione
+  combatLoopTimer = setInterval(gameTick, LOOP_TICK_MS);
 }
 function setAutoHunting(on){
   S.autoHunting = on;
   const btn = document.getElementById('hunt-toggle');
   btn.textContent = on ? '⏸ Pausa caccia' : '▶ Avvia caccia';
-  startLoop();
+  if(on) resetCombatClocks(); // il combattimento "riparte pulito": nessun colpo arretrato per il tempo passato fermi
 }
-// restart loop whenever speed upgrade changes (while hunting is active)
-let lastSpeedVal = null;
-function tickWatcher(){
-  if(!S.autoHunting) return;
-  const cur = totalStat('speed');
-  if(cur !== lastSpeedVal){
-    lastSpeedVal = cur;
-    startLoop();
-  }
-}
-setInterval(tickWatcher, 300);
 
 /* =====================================================
    OFFLINE PROGRESS
@@ -2968,6 +3028,11 @@ function init(){
   }
   S.hpMax = totalStat('maxhp');
   if(!S.hp || S.hp<=0) S.hp = S.hpMax;
+  // FASE 3.1: dopo un refresh/riapertura, il timestamp dell'ultimo attacco del mostro può
+  // essere molto vecchio (o mancare del tutto su salvataggi precedenti alla 3.1) — azzerando
+  // qui i timer si evita un "attacco arretrato" istantaneo del mostro appena il gioco riparte.
+  resetMonsterAttackTimer();
+  resetCombatClocks();
   document.getElementById('auto-equip').checked = S.autoEquip !== false;
   renderAll();
   document.getElementById('hunt-toggle').textContent = S.autoHunting ? '⏸ Pausa caccia' : '▶ Avvia caccia';
