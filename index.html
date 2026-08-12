@@ -1068,8 +1068,18 @@ footer.credits{
 ===================================================== */
 const FIREBASE_DB_URL = 'https://pietre-corrotte-default-rtdb.firebaseio.com';
 
-const GAME_VERSION = '0.3.3';
+const GAME_VERSION = '0.3.4';
 const CHANGELOG = [
+  {version:'0.3.4', date:'12 ago 2026', categories:{
+    bugfix: [
+      'Fase 3.1 — Stabilizzazione del combattimento: corretto il bug per cui l\u2019attacco del mostro veniva controllato solo dentro la funzione dell\u2019attacco del giocatore. Con velocità d\u2019attacco del giocatore lenta, il mostro poteva "perdere" colpi che gli sarebbero spettati; ora il suo timer viene controllato indipendentemente ad ogni tick del game loop, non più agganciato a quando/se il giocatore attacca',
+      'Corretto: la rigenerazione HP passiva dipendeva dal numero di volte in cui veniva eseguito l\u2019attacco (inclusi i click manuali ripetuti), invece che dal tempo realmente trascorso — spammare il pulsante d\u2019attacco dava rigenerazione estra ingiustificata. Ora la rigenerazione è deterministica rispetto al tempo (0.3% HP max al secondo, stesso valore di prima, applicato correttamente)',
+      'Corretto un possibile "colpo arretrato" del mostro subito dopo un refresh della pagina o una lunga pausa: i timer di combattimento vengono ora riallineati all\u2019avvio e alla ripresa della caccia, invece di trascinare timestamp scaduti da prima'
+    ],
+    ottimizzazione: [
+      'Il game loop resta un singolo timer per l\u2019intera sessione di gioco (nessun setInterval duplicato): rimosso anche il polling separato che prima ricreava il loop ad ogni cambio di velocità, ora non più necessario perché ogni tick legge la velocità attuale in tempo reale'
+    ]
+  }},
   {version:'0.3.3', date:'7 ago 2026', categories:{
     bilanciamento: [
       'Aggiunto un tetto di sicurezza al danno per singolo colpo dei mostri: mai oltre il 12% (mostri normali), 16% (mini-boss) o 20% (boss) degli HP massimi del giocatore in un colpo solo, indipendentemente dai numeri grezzi',
